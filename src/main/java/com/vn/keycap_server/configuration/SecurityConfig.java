@@ -3,6 +3,7 @@ package com.vn.keycap_server.configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,7 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
-        "/auth/login",
+            "/login", "/login/google"
     };
 
     private final CustomJwtDecoder customJwtDecoder;
@@ -46,6 +47,9 @@ public class SecurityConfig {
 
         // 3. Tắt CSRF vì đang dùng JWT Stateless
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
+
+        // 4. Cho phép CORS
+        httpSecurity.cors(Customizer.withDefaults());
 
         return httpSecurity.build();
     }

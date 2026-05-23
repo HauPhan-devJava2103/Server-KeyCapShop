@@ -1,6 +1,7 @@
+server:
+  port: 3000
+
 spring:
-  server:
-    port: 8080
   application:
     name: keycap_server
   datasource:
@@ -13,5 +14,22 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+
 jwt:
   signerKey: ${JWT_SIGNER_KEY}
+
+google:
+  oauth2:
+    project-id: ${GOOGLE_PROJECT_ID}
+    auth-url: ${GOOGLE_AUTH_URL}
+    token-uri: ${GOOGLE_TOKEN_URI}
+    auth-provider-x509-cert-url: ${GOOGLE_AUTH_PROVIDER_CERT_URL}
+    javascript-origins: ${GOOGLE_JAVASCRIPT_ORIGINS}

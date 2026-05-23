@@ -2,6 +2,7 @@ package com.vn.keycap_server.service.auth;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Date;
 import java.util.UUID;
 
@@ -10,6 +11,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -17,11 +22,13 @@ import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.vn.keycap_server.dto.request.LoginGoogleRequest;
 import com.vn.keycap_server.dto.request.LoginRequest;
 import com.vn.keycap_server.dto.response.LoginResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.modal.User;
 import com.vn.keycap_server.repository.UserRepository;
+import com.vn.keycap_server.utils.ERole;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +40,9 @@ public class AuthenticationService implements IAuthenticationService {
 
     @Value("${jwt.signerKey}")
     private String signerKey;
+
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String googleClientId;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -53,6 +63,51 @@ public class AuthenticationService implements IAuthenticationService {
         // Generate Token
         var accessToken = generateToken(user);
 
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .user(user)
+                .build();
+    }
+
+    @Override
+    public LoginResponse loginGoogle(LoginGoogleRequest request) {
+        // Verify tokenId Google
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(),
+                GsonFactory.getDefaultInstance())
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
+
+        GoogleIdToken idToken;
+        try {
+            idToken = verifier.verify(request.getIdToken());
+
+        } catch (Exception e) {
+            throw new BadRequestException("Token Google không hợp lệ");
+
+        }
+        if (idToken == null) {
+            throw new BadRequestException("Token Google không hợp lệ");
+        }
+
+        // Payload Google
+        GoogleIdToken.Payload payload = idToken.getPayload();
+        String email = payload.getEmail();
+        String fullName = (String) payload.get("name");
+        String avatarUrl = (String) payload.get("picture");
+
+        User user = userRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    User newUser = User.builder()
+                            .email(email)
+                            .fullName(fullName)
+                            .avatarUrl(avatarUrl)
+                            .role(ERole.USER)
+                            .password(null) // Không có password vì login bằng Google
+                            .build();
+                    return userRepository.save(newUser);
+                });
+
+        String accessToken = generateToken(user);
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .user(user)
