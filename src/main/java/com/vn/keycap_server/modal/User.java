@@ -3,6 +3,7 @@ package com.vn.keycap_server.modal;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vn.keycap_server.utils.EGender;
 import com.vn.keycap_server.utils.ERole;
 
@@ -44,6 +45,7 @@ public class User extends AbstractEntity {
     @Column(name = "email", unique = true)
     private String email;
 
+    @JsonIgnore
     @Column(name = "password")
     private String password;
 
@@ -55,6 +57,7 @@ public class User extends AbstractEntity {
     private ERole role;
 
     // Relationship
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InvalidatedToken> tokens;
 }
