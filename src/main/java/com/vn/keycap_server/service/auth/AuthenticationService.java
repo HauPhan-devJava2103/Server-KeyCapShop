@@ -33,12 +33,12 @@ import com.vn.keycap_server.dto.request.LoginGoogleRequest;
 import com.vn.keycap_server.dto.request.LoginRequest;
 import com.vn.keycap_server.dto.request.ResetPasswordRequest;
 import com.vn.keycap_server.dto.request.SendOtpRequest;
-import com.vn.keycap_server.dto.request.VerifyOtpRequest;
 import com.vn.keycap_server.dto.response.LoginResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.modal.User;
 import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.service.mail.IMailService;
+import com.vn.keycap_server.utils.EOtpPurpose;
 import com.vn.keycap_server.utils.ERole;
 
 import lombok.RequiredArgsConstructor;
@@ -133,8 +133,12 @@ public class AuthenticationService implements IAuthenticationService {
     public void sendOtp(SendOtpRequest request) {
 
         String email = request.getEmail();
-        userRepository.findByEmail(email).orElseThrow(() -> new BadRequestException("Email không tồn tại"));
+        EOtpPurpose purpose = request.getPurpose();
 
+        if (purpose == EOtpPurpose.FORGOT_PASSWORD) {
+            userRepository.findByEmail(email)
+                    .orElseThrow(() -> new BadRequestException("Email không tồn tại trong hệ thống"));
+        }
         // Rate Limit
         String cooldownKey = "cooldown:otp:" + email;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
@@ -147,7 +151,10 @@ public class AuthenticationService implements IAuthenticationService {
         // Save OTP Redis
         try {
             String otpKey = "otp:" + email;
-            Map<String, Object> otpData = Map.of("otp", otp, "attempts", 0);
+            Map<String, Object> otpData = Map.of(
+                    "otp", otp,
+                    "attempts", 0,
+                    "purpose", purpose);
             redisTemplate.opsForValue().set(otpKey, objectMapper.writeValueAsString(otpData), 5, TimeUnit.MINUTES);
 
         } catch (JsonProcessingException e) {
@@ -160,9 +167,12 @@ public class AuthenticationService implements IAuthenticationService {
     }
 
     @Override
-    public Map<String, String> verifyOtp(VerifyOtpRequest request) {
+    public void verifyOtp(String email, String inputOtp, EOtpPurpose expectedPurpose,
+            EOtpPurpose actualPurpose) {
 
-        String email = request.getEmail();
+        if (actualPurpose != expectedPurpose) {
+            throw new BadRequestException("Mục đích sử dụng OTP không hợp lệ");
+        }
         String otpKey = "otp:" + email;
 
         // Get OTP Redis
@@ -178,7 +188,11 @@ public class AuthenticationService implements IAuthenticationService {
             });
             String savedOtp = (String) otpData.get("otp");
             int attempts = (int) otpData.get("attempts");
+            String savedPurpose = (String) otpData.get("purpose");
 
+            if (!expectedPurpose.name().equals(savedPurpose)) {
+                throw new BadRequestException("OTP này không dùng cho mục đích " + expectedPurpose.name());
+            }
             // Check attempts
             if (attempts >= 5) {
                 redisTemplate.delete(otpKey);
@@ -186,7 +200,7 @@ public class AuthenticationService implements IAuthenticationService {
             }
 
             // Match OTP
-            if (!savedOtp.equals(request.getOtp())) {
+            if (!savedOtp.equals(inputOtp)) {
                 otpData.put("attempts", attempts + 1);
                 Long ttl = redisTemplate.getExpire(otpKey, TimeUnit.SECONDS);
                 redisTemplate.opsForValue().set(otpKey, objectMapper.writeValueAsString(otpData), ttl,
@@ -200,7 +214,6 @@ public class AuthenticationService implements IAuthenticationService {
 
             // Delete OTP
             redisTemplate.delete(otpKey);
-            return Map.of("resetToken", resetToken);
 
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Lỗi khi đọc OTP", e);
@@ -211,20 +224,20 @@ public class AuthenticationService implements IAuthenticationService {
     @Override
     public void resetPassword(ResetPasswordRequest request) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
-        String tokenKey = "reset-token:" + request.getResetToken();
-        // Get emai
-        String email = redisTemplate.opsForValue().get(tokenKey);
-        if (email == null) {
-            throw new BadRequestException("Link đặt lại mật khẩu đã hết hạn hoặc không hợp lệ");
+        // Verify OTP and Purpose
+        verifyOtp(request.getEmail(), request.getOtp(),
+                EOtpPurpose.FORGOT_PASSWORD, request.getOtpPurpose());
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Mật khẩu xác nhận không khớp");
         }
 
         // Get user
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BadRequestException("Không tìm thấy tài khoản"));
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-        redisTemplate.delete(tokenKey);
     }
 
     // HELPER METHODS

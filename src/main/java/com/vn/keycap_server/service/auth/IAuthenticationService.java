@@ -6,8 +6,8 @@ import com.vn.keycap_server.dto.request.LoginGoogleRequest;
 import com.vn.keycap_server.dto.request.LoginRequest;
 import com.vn.keycap_server.dto.request.ResetPasswordRequest;
 import com.vn.keycap_server.dto.request.SendOtpRequest;
-import com.vn.keycap_server.dto.request.VerifyOtpRequest;
 import com.vn.keycap_server.dto.response.LoginResponse;
+import com.vn.keycap_server.utils.EOtpPurpose;
 
 public interface IAuthenticationService {
 
@@ -20,7 +20,8 @@ public interface IAuthenticationService {
     // Forgot Password
     void sendOtp(SendOtpRequest request);
 
-    Map<String, String> verifyOtp(VerifyOtpRequest request);
+    void verifyOtp(String email, String inputOtp, EOtpPurpose expectedPurpose,
+            EOtpPurpose actualPurpose);
 
     void resetPassword(ResetPasswordRequest request);
 

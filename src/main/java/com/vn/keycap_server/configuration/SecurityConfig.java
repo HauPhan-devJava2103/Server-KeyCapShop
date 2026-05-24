@@ -21,9 +21,8 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/login", "/login/google",
-            "/forgot-password/send-otp",
-            "/forgot-password/verify-otp",
-            "/forgot-password/reset-password"
+            "/otps/request",
+            "/reset-password"
     };
 
     private final CustomJwtDecoder customJwtDecoder;
