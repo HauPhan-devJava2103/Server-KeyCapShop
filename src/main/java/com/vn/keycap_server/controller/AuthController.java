@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.vn.keycap_server.dto.ApiResponse;
 import com.vn.keycap_server.dto.request.LoginGoogleRequest;
 import com.vn.keycap_server.dto.request.LoginRequest;
+import com.vn.keycap_server.dto.request.RegisterRequest;
 import com.vn.keycap_server.dto.request.ResetPasswordRequest;
 import com.vn.keycap_server.dto.request.SendOtpRequest;
 import com.vn.keycap_server.dto.response.LoginResponse;
@@ -52,6 +53,13 @@ public class AuthController {
     public ResponseEntity<ApiResponse> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
         authenticationService.resetPassword(request);
         return ResponseEntity.ok(ApiResponse.success("Reset password thành công", null));
+    }
+
+    // Register
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse> register(@RequestBody @Valid RegisterRequest request) {
+        LoginResponse response = authenticationService.register(request);
+        return ResponseEntity.ok(ApiResponse.success("Đăng ký thành công", response));
     }
 
 }

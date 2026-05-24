@@ -1,13 +1,11 @@
 package com.vn.keycap_server.service.auth;
 
-import java.util.Map;
-
 import com.vn.keycap_server.dto.request.LoginGoogleRequest;
 import com.vn.keycap_server.dto.request.LoginRequest;
+import com.vn.keycap_server.dto.request.RegisterRequest;
 import com.vn.keycap_server.dto.request.ResetPasswordRequest;
 import com.vn.keycap_server.dto.request.SendOtpRequest;
 import com.vn.keycap_server.dto.response.LoginResponse;
-import com.vn.keycap_server.utils.EOtpPurpose;
 
 public interface IAuthenticationService {
 
@@ -20,9 +18,9 @@ public interface IAuthenticationService {
     // Forgot Password
     void sendOtp(SendOtpRequest request);
 
-    void verifyOtp(String email, String inputOtp, EOtpPurpose expectedPurpose,
-            EOtpPurpose actualPurpose);
-
     void resetPassword(ResetPasswordRequest request);
+
+    // Register
+    LoginResponse register(RegisterRequest request);
 
 }

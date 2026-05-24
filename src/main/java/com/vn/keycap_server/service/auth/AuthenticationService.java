@@ -31,10 +31,12 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.vn.keycap_server.dto.request.LoginGoogleRequest;
 import com.vn.keycap_server.dto.request.LoginRequest;
+import com.vn.keycap_server.dto.request.RegisterRequest;
 import com.vn.keycap_server.dto.request.ResetPasswordRequest;
 import com.vn.keycap_server.dto.request.SendOtpRequest;
 import com.vn.keycap_server.dto.response.LoginResponse;
 import com.vn.keycap_server.exception.BadRequestException;
+import com.vn.keycap_server.mapper.UserMapper;
 import com.vn.keycap_server.modal.User;
 import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.service.mail.IMailService;
@@ -58,6 +60,7 @@ public class AuthenticationService implements IAuthenticationService {
     private final RedisTemplate<String, String> redisTemplate;
     private final IMailService mailService;
     private final ObjectMapper objectMapper;
+    private final UserMapper userMapper;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -117,7 +120,7 @@ public class AuthenticationService implements IAuthenticationService {
                             .fullName(fullName)
                             .avatarUrl(avatarUrl)
                             .role(ERole.USER)
-                            .password(null) // Không có password vì login bằng Google
+                            .password(null)
                             .build();
                     return userRepository.save(newUser);
                 });
@@ -139,6 +142,10 @@ public class AuthenticationService implements IAuthenticationService {
             userRepository.findByEmail(email)
                     .orElseThrow(() -> new BadRequestException("Email không tồn tại trong hệ thống"));
         }
+        if (purpose == EOtpPurpose.REGISTER && userRepository.findByEmail(email).isPresent()) {
+            throw new BadRequestException("Email đã tồn tại trong hệ thống");
+        }
+
         // Rate Limit
         String cooldownKey = "cooldown:otp:" + email;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
@@ -167,6 +174,91 @@ public class AuthenticationService implements IAuthenticationService {
     }
 
     @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        // Verify OTP and Purpose
+        verifyOtp(request.getEmail(), request.getOtp(),
+                EOtpPurpose.FORGOT_PASSWORD, request.getOtpPurpose());
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Mật khẩu xác nhận không khớp");
+        }
+
+        // Get user
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy tài khoản"));
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
+    public LoginResponse register(RegisterRequest request) {
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        // Verify OTP
+        verifyOtp(request.getEmail(), request.getOtp(), EOtpPurpose.REGISTER, request.getOtpPurpose());
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new BadRequestException("Email đã được sử dụng");
+        }
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Mật khẩu xác nhận không khớp");
+        }
+
+        User user = userMapper.registerRequestToUser(request);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(ERole.USER);
+        userRepository.save(user);
+
+        // Login -> Register Success
+        String accessToken = generateToken(user);
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .user(user)
+                .build();
+
+    }
+
+    // HELPER METHODS
+    // Generate Token
+    private String generateToken(User user) {
+        // Header: MATH HS512
+        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+
+        // Date Time
+        Date issueTime = new Date();
+        Date expiryTime = new Date(Instant.ofEpochMilli(issueTime.getTime())
+                .plus(1, ChronoUnit.HOURS)
+                .toEpochMilli());
+        // Payload
+        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
+                .subject(user.getEmail()) // Ai đang đăng nhập
+                .issuer("keycap-server") // Ai phát hành token
+                .issueTime(issueTime) // Phát hành lúc nào
+                .expirationTime(expiryTime) // Hết hạn lúc nào
+                .jwtID(UUID.randomUUID().toString()) // ID duy nhất của token
+                .claim("scope", buildScope(user)) // Quyền: ROLE_USER, ROLE_ADMIN
+                .claim("userId", user.getId()) // ID user trong DB
+                .build();
+
+        // Sign Token By Secret Key
+        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
+
+        JWSObject jwsObject = new JWSObject(header, payload);
+        try {
+            jwsObject.sign(new MACSigner(signerKey.getBytes()));
+            return jwsObject.serialize();
+        } catch (JOSEException e) {
+            throw new RuntimeException("Can not generate token", e);
+        }
+    }
+
+    private String buildScope(User user) {
+        if (user.getRole() != null) {
+            return "ROLE_" + user.getRole().name();
+        }
+        return "ROLE_USER";
+    }
+
     public void verifyOtp(String email, String inputOtp, EOtpPurpose expectedPurpose,
             EOtpPurpose actualPurpose) {
 
@@ -219,66 +311,6 @@ public class AuthenticationService implements IAuthenticationService {
             throw new RuntimeException("Lỗi khi đọc OTP", e);
         }
 
-    }
-
-    @Override
-    public void resetPassword(ResetPasswordRequest request) {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
-        // Verify OTP and Purpose
-        verifyOtp(request.getEmail(), request.getOtp(),
-                EOtpPurpose.FORGOT_PASSWORD, request.getOtpPurpose());
-
-        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new BadRequestException("Mật khẩu xác nhận không khớp");
-        }
-
-        // Get user
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadRequestException("Không tìm thấy tài khoản"));
-
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
-    }
-
-    // HELPER METHODS
-    // Generate Token
-    private String generateToken(User user) {
-        // Header: MATH HS512
-        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
-
-        // Date Time
-        Date issueTime = new Date();
-        Date expiryTime = new Date(Instant.ofEpochMilli(issueTime.getTime())
-                .plus(1, ChronoUnit.HOURS)
-                .toEpochMilli());
-        // Payload
-        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getEmail()) // Ai đang đăng nhập
-                .issuer("keycap-server") // Ai phát hành token
-                .issueTime(issueTime) // Phát hành lúc nào
-                .expirationTime(expiryTime) // Hết hạn lúc nào
-                .jwtID(UUID.randomUUID().toString()) // ID duy nhất của token
-                .claim("scope", buildScope(user)) // Quyền: ROLE_USER, ROLE_ADMIN
-                .claim("userId", user.getId()) // ID user trong DB
-                .build();
-
-        // Sign Token By Secret Key
-        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-
-        JWSObject jwsObject = new JWSObject(header, payload);
-        try {
-            jwsObject.sign(new MACSigner(signerKey.getBytes()));
-            return jwsObject.serialize();
-        } catch (JOSEException e) {
-            throw new RuntimeException("Can not generate token", e);
-        }
-    }
-
-    private String buildScope(User user) {
-        if (user.getRole() != null) {
-            return "ROLE_" + user.getRole().name();
-        }
-        return "ROLE_USER";
     }
 
 }
