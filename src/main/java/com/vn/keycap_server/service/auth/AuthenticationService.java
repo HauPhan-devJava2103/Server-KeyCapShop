@@ -4,13 +4,20 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -24,10 +31,14 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.vn.keycap_server.dto.request.LoginGoogleRequest;
 import com.vn.keycap_server.dto.request.LoginRequest;
+import com.vn.keycap_server.dto.request.ResetPasswordRequest;
+import com.vn.keycap_server.dto.request.SendOtpRequest;
+import com.vn.keycap_server.dto.request.VerifyOtpRequest;
 import com.vn.keycap_server.dto.response.LoginResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.modal.User;
 import com.vn.keycap_server.repository.UserRepository;
+import com.vn.keycap_server.service.mail.IMailService;
 import com.vn.keycap_server.utils.ERole;
 
 import lombok.RequiredArgsConstructor;
@@ -43,6 +54,10 @@ public class AuthenticationService implements IAuthenticationService {
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
+
+    private final RedisTemplate<String, String> redisTemplate;
+    private final IMailService mailService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -112,6 +127,104 @@ public class AuthenticationService implements IAuthenticationService {
                 .accessToken(accessToken)
                 .user(user)
                 .build();
+    }
+
+    @Override
+    public void sendOtp(SendOtpRequest request) {
+
+        String email = request.getEmail();
+        userRepository.findByEmail(email).orElseThrow(() -> new BadRequestException("Email không tồn tại"));
+
+        // Rate Limit
+        String cooldownKey = "cooldown:otp:" + email;
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
+            throw new BadRequestException("Vui lòng đợi 60 giây trước khi gửi lại OTP");
+        }
+
+        // Generate OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+
+        // Save OTP Redis
+        try {
+            String otpKey = "otp:" + email;
+            Map<String, Object> otpData = Map.of("otp", otp, "attempts", 0);
+            redisTemplate.opsForValue().set(otpKey, objectMapper.writeValueAsString(otpData), 5, TimeUnit.MINUTES);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Lỗi lưu OTP", e);
+        }
+        redisTemplate.opsForValue().set(cooldownKey, "1", 60, TimeUnit.SECONDS);
+        // Send OTP email
+        mailService.sendOtpEmail(email, otp);
+
+    }
+
+    @Override
+    public Map<String, String> verifyOtp(VerifyOtpRequest request) {
+
+        String email = request.getEmail();
+        String otpKey = "otp:" + email;
+
+        // Get OTP Redis
+        String otpJson = redisTemplate.opsForValue().get(otpKey);
+        if (otpJson == null) {
+            throw new BadRequestException("OTP không tồn tại hoặc đã hết hạn");
+        }
+
+        try {
+
+            // Parse JSON
+            Map<String, Object> otpData = objectMapper.readValue(otpJson, new TypeReference<>() {
+            });
+            String savedOtp = (String) otpData.get("otp");
+            int attempts = (int) otpData.get("attempts");
+
+            // Check attempts
+            if (attempts >= 5) {
+                redisTemplate.delete(otpKey);
+                throw new BadRequestException("Nhập sai quá 5 lần. Vui lòng lấy lại OTP mới");
+            }
+
+            // Match OTP
+            if (!savedOtp.equals(request.getOtp())) {
+                otpData.put("attempts", attempts + 1);
+                Long ttl = redisTemplate.getExpire(otpKey, TimeUnit.SECONDS);
+                redisTemplate.opsForValue().set(otpKey, objectMapper.writeValueAsString(otpData), ttl,
+                        TimeUnit.SECONDS);
+                int remaining = 4 - attempts;
+                throw new BadRequestException("OTP không chính xác. Còn " + remaining + " lần thử");
+            }
+            // OTP Correct
+            String resetToken = UUID.randomUUID().toString();
+            redisTemplate.opsForValue().set("reset-token:" + resetToken, email, 10, TimeUnit.MINUTES);
+
+            // Delete OTP
+            redisTemplate.delete(otpKey);
+            return Map.of("resetToken", resetToken);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Lỗi khi đọc OTP", e);
+        }
+
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        String tokenKey = "reset-token:" + request.getResetToken();
+        // Get emai
+        String email = redisTemplate.opsForValue().get(tokenKey);
+        if (email == null) {
+            throw new BadRequestException("Link đặt lại mật khẩu đã hết hạn hoặc không hợp lệ");
+        }
+
+        // Get user
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy tài khoản"));
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        redisTemplate.delete(tokenKey);
     }
 
     // HELPER METHODS

@@ -20,7 +20,10 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/login", "/login/google"
+            "/login", "/login/google",
+            "/forgot-password/send-otp",
+            "/forgot-password/verify-otp",
+            "/forgot-password/reset-password"
     };
 
     private final CustomJwtDecoder customJwtDecoder;

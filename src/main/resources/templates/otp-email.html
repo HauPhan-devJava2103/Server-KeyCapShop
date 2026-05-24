@@ -1,0 +1,276 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đặt lại mật khẩu – KeyCap Shop</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet" />
+  </head>
+  <body style="margin: 0; padding: 0; background: #f1f5f9">
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      style="background: #f1f5f9; padding: 40px 16px">
+      <tr>
+        <td align="center">
+          <!-- Card -->
+          <table
+            width="480"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              background: #ffffff;
+              border-radius: 20px;
+              overflow: hidden;
+              font-family: &quot;DM Sans&quot;, Arial, sans-serif;
+              box-shadow: 0 2px 24px rgba(0, 0, 0, 0.08);
+            ">
+            <!-- ===== HEADER ===== -->
+            <tr>
+              <td style="background: #0f172a; padding: 32px 36px 0">
+                <!-- Brand row -->
+                <table
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="margin-bottom: 24px">
+                  <tr>
+                    <td style="vertical-align: middle">
+                      <table cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td
+                            style="
+                              width: 36px;
+                              height: 36px;
+                              background: #f8c94e;
+                              border-radius: 8px;
+                              text-align: center;
+                              vertical-align: middle;
+                            ">
+                            <!-- KeyCap icon (simplified SVG) -->
+                            <img
+                              src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIzIiB5PSI3IiB3aWR0aD0iNyIgaGVpZ2h0PSI3IiByeD0iMiIgZmlsbD0iIzBmMTcyYSIvPjxyZWN0IHg9IjEyIiB5PSIzIiB3aWR0aD0iNSIgaGVpZ2h0PSI1IiByeD0iMS41IiBmaWxsPSIjMGYxNzJhIi8+PHJlY3QgeD0iMTIiIHk9IjExIiB3aWR0aD0iNSIgaGVpZ2h0PSI2IiByeD0iMS41IiBmaWxsPSIjMGYxNzJhIi8+PC9zdmc+"
+                              width="20"
+                              height="20"
+                              alt=""
+                              style="display: block; margin: auto" />
+                          </td>
+                          <td
+                            style="
+                              padding-left: 10px;
+                              color: #ffffff;
+                              font-size: 15px;
+                              font-weight: 600;
+                              letter-spacing: 0.03em;
+                              vertical-align: middle;
+                            ">
+                            KeyCap Shop
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Title -->
+                <p
+                  style="
+                    margin: 0;
+                    color: #ffffff;
+                    font-family: &quot;DM Serif Display&quot;, Georgia, serif;
+                    font-size: 26px;
+                    font-weight: 400;
+                    line-height: 1.3;
+                  ">
+                  Đặt lại mật khẩu<br />của bạn
+                </p>
+                <p style="margin: 6px 0 0; color: #94a3b8; font-size: 13px">
+                  Yêu cầu bảo mật · Mã một lần
+                </p>
+
+                <!-- Gradient accent bar -->
+                <div
+                  style="
+                    height: 3px;
+                    margin-top: 28px;
+                    background: linear-gradient(
+                      90deg,
+                      #f8c94e 0%,
+                      #f97316 50%,
+                      #ec4899 100%
+                    );
+                  "></div>
+              </td>
+            </tr>
+
+            <!-- ===== BODY ===== -->
+            <tr>
+              <td style="padding: 36px">
+                <p
+                  style="
+                    margin: 0 0 6px;
+                    color: #1e293b;
+                    font-size: 15px;
+                    line-height: 1.7;
+                  ">
+                  Xin chào,
+                </p>
+                <p
+                  style="
+                    margin: 0 0 28px;
+                    color: #64748b;
+                    font-size: 14px;
+                    line-height: 1.7;
+                  ">
+                  Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của
+                  bạn. Vui lòng nhập mã OTP bên dưới để tiếp tục.
+                </p>
+
+                <!-- OTP Block -->
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="
+                    background: #0f172a;
+                    border-radius: 14px;
+                    margin-bottom: 28px;
+                  ">
+                  <tr>
+                    <td style="padding: 28px; text-align: center">
+                      <p
+                        style="
+                          margin: 0 0 14px;
+                          color: #94a3b8;
+                          font-size: 11px;
+                          letter-spacing: 0.15em;
+                          text-transform: uppercase;
+                        ">
+                        Mã xác thực của bạn
+                      </p>
+
+                      <!-- OTP digits — Thymeleaf splits the otp string into characters -->
+                      <table
+                        cellpadding="0"
+                        cellspacing="0"
+                        style="margin: auto">
+                        <tr>
+                          <td
+                            th:each="digit : ${#strings.listSplit(otp, '')}"
+                            style="
+                              width: 48px;
+                              height: 60px;
+                              background: #1e293b;
+                              border: 1.5px solid #334155;
+                              border-radius: 10px;
+                              text-align: center;
+                              vertical-align: middle;
+                              font-family:
+                                &quot;DM Serif Display&quot;, Georgia, serif;
+                              font-size: 28px;
+                              color: #f8c94e;
+                              padding: 0 5px;
+                            "
+                            th:text="${digit}">
+                            0
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Fallback single span (use EITHER the th:each above OR this, not both) -->
+                      <!--
+                    <p style="font-family:'DM Serif Display', Georgia, serif; font-size:40px;
+                               font-weight:400; color:#f8c94e; letter-spacing:14px;
+                               margin: 0 0 0 14px;" th:text="${otp}">123456</p>
+                    -->
+
+                      <p
+                        style="
+                          margin: 18px 0 0;
+                          color: #64748b;
+                          font-size: 12px;
+                        ">
+                        Có hiệu lực trong
+                        <strong style="color: #f8c94e">5 phút</strong>
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Warning box -->
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="
+                    background: #fff7ed;
+                    border: 1px solid #fed7aa;
+                    border-radius: 10px;
+                    margin-bottom: 24px;
+                  ">
+                  <tr>
+                    <td
+                      style="
+                        padding: 14px 16px;
+                        color: #9a3412;
+                        font-size: 12.5px;
+                        line-height: 1.6;
+                      ">
+                      <strong>Không chia sẻ mã này với bất kỳ ai.</strong>
+                      Đội ngũ KeyCap Shop sẽ không bao giờ yêu cầu mã OTP của
+                      bạn. Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email
+                      này — tài khoản của bạn vẫn an toàn.
+                    </td>
+                  </tr>
+                </table>
+
+                <p
+                  style="
+                    margin: 0;
+                    color: #64748b;
+                    font-size: 13px;
+                    line-height: 1.7;
+                  ">
+                  Cần hỗ trợ? Liên hệ chúng tôi qua
+                  <a
+                    href="mailto:support@keycap.shop"
+                    style="
+                      color: #2563eb;
+                      text-decoration: none;
+                      font-weight: 500;
+                    ">
+                    support@keycap.shop
+                  </a>
+                </p>
+              </td>
+            </tr>
+
+            <!-- ===== FOOTER ===== -->
+            <tr>
+              <td
+                style="
+                  background: #f8fafc;
+                  border-top: 1px solid #f1f5f9;
+                  padding: 20px 36px;
+                ">
+                <p
+                  style="
+                    margin: 0;
+                    color: #94a3b8;
+                    font-size: 11.5px;
+                    line-height: 1.7;
+                  ">
+                  2025 <strong style="color: #0f172a">KeyCap Shop</strong> · Gửi
+                  bởi hệ thống tự động, vui lòng không trả lời email này.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <!-- /Card -->
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
