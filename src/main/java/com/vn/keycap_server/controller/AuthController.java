@@ -1,8 +1,10 @@
 package com.vn.keycap_server.controller;
 
+import com.vn.keycap_server.configuration.AppConfig;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -60,6 +62,13 @@ public class AuthController {
     public ResponseEntity<ApiResponse> register(@RequestBody @Valid RegisterRequest request) {
         LoginResponse response = authenticationService.register(request);
         return ResponseEntity.ok(ApiResponse.success("Đăng ký thành công", response));
+    }
+
+    // Logout
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse> logout(@RequestHeader("Authorization") String authHeader) {
+        authenticationService.logout(authHeader);
+        return ResponseEntity.ok(ApiResponse.success("Đăng xuất thành công", null));
     }
 
 }

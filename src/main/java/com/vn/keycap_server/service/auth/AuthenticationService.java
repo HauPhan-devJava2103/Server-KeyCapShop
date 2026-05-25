@@ -2,8 +2,6 @@ package com.vn.keycap_server.service.auth;
 
 import java.text.ParseException;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
@@ -29,10 +27,13 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.vn.keycap_server.configuration.AppConfig;
 import com.vn.keycap_server.dto.request.LoginGoogleRequest;
 import com.vn.keycap_server.dto.request.LoginRequest;
 import com.vn.keycap_server.dto.request.RegisterRequest;
@@ -40,6 +41,7 @@ import com.vn.keycap_server.dto.request.ResetPasswordRequest;
 import com.vn.keycap_server.dto.request.SendOtpRequest;
 import com.vn.keycap_server.dto.response.LoginResponse;
 import com.vn.keycap_server.exception.BadRequestException;
+import com.vn.keycap_server.exception.UnauthorizedException;
 import com.vn.keycap_server.mapper.UserMapper;
 import com.vn.keycap_server.modal.User;
 import com.vn.keycap_server.modal.UserToken;
@@ -228,6 +230,35 @@ public class AuthenticationService implements IAuthenticationService {
 
     }
 
+    @Override
+    public void logout(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BadRequestException("Token không tồn tại hoặc sai định dạng");
+        }
+
+        String token = authHeader.substring(7);
+        SignedJWT signedJWT = verifyToken(token);
+
+        try {
+            String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+
+            UserToken userToken = userTokenRepository.findByRefreshToken(jwtId)
+                    .orElseThrow(() -> new UnauthorizedException("Token không tồn tại"));
+
+            userToken.setRevoked(true);
+            userTokenRepository.save(userToken);
+        } catch (ParseException e) {
+            throw new UnauthorizedException("Token không hợp lệ");
+        }
+
+    }
+
+    @Override
+    public boolean isTokenValid(String jwtId) {
+        return userTokenRepository.existsByRefreshTokenAndIsRevokedFalse(jwtId);
+
+    }
+
     // HELPER METHODS
     // Generate Token
     private String generateToken(User user) {
@@ -269,7 +300,35 @@ public class AuthenticationService implements IAuthenticationService {
         return "ROLE_USER";
     }
 
-    public void verifyOtp(String email, String inputOtp, EOtpPurpose expectedPurpose,
+    private SignedJWT verifyToken(String token) {
+
+        try {
+            JWSVerifier verifier = new MACVerifier(signerKey.getBytes());
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+            var verified = signedJWT.verify(verifier);
+
+            // Check chữ ký + hết hạn
+            if (!verified) {
+                throw new UnauthorizedException("Chữ ký token không hợp lệ");
+            }
+            if (!expiryTime.after(new Date())) {
+                throw new UnauthorizedException("Token đã hết hạn");
+            }
+            // Check token có trong whitelist và chưa bị revoke
+            String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+            if (!userTokenRepository.existsByRefreshTokenAndIsRevokedFalse(jwtId)) {
+                throw new UnauthorizedException("Token đã bị vô hiệu hóa");
+            }
+
+            return signedJWT;
+        } catch (ParseException | JOSEException e) {
+            throw new UnauthorizedException("Token không hợp lệ");
+        }
+    }
+
+    private void verifyOtp(String email, String inputOtp, EOtpPurpose expectedPurpose,
             EOtpPurpose actualPurpose) {
 
         if (actualPurpose != expectedPurpose) {
@@ -331,9 +390,7 @@ public class AuthenticationService implements IAuthenticationService {
             // Lấy jwtId
             String jwtId = claims.getJWTID();
             // Lấy expiresAt
-            LocalDateTime expiresAt = LocalDateTime.ofInstant(
-                    claims.getExpirationTime().toInstant(),
-                    ZoneId.systemDefault());
+            Date expiresAt = claims.getExpirationTime();
             // Tạo UserToken record
             UserToken userToken = UserToken.builder()
                     .user(user)

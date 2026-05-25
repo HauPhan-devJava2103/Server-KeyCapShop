@@ -23,4 +23,9 @@ public interface IAuthenticationService {
     // Register
     LoginResponse register(RegisterRequest request);
 
+    // Logout
+    void logout(String token);
+
+    boolean isTokenValid(String jwtId);
+
 }

@@ -1,6 +1,7 @@
 package com.vn.keycap_server.modal;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -38,5 +39,5 @@ public class UserToken extends AbstractEntity {
     private boolean isRevoked = false;
 
     @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    private Date expiresAt;
 }

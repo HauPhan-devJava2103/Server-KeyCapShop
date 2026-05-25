@@ -51,6 +51,9 @@ public class SecurityConfig {
         // 3. Tắt CSRF vì đang dùng JWT Stateless
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
 
+        // 4. Tắt LogoutFilter mặc định
+        httpSecurity.logout(logout -> logout.disable());
+
         // 4. Cho phép CORS
         httpSecurity.cors(Customizer.withDefaults());
 

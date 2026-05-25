@@ -3,6 +3,7 @@ package com.vn.keycap_server.configuration;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -21,7 +22,7 @@ public class CustomJwtDecoder implements JwtDecoder {
     private final IAuthenticationService authenticationService;
     private NimbusJwtDecoder nimbusJwtDecoder = null;
 
-    public CustomJwtDecoder(IAuthenticationService authenticationService) {
+    public CustomJwtDecoder(@Lazy IAuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
 
@@ -33,7 +34,13 @@ public class CustomJwtDecoder implements JwtDecoder {
                     .macAlgorithm(MacAlgorithm.HS512)
                     .build();
         }
-        return nimbusJwtDecoder.decode(token);
+        Jwt jwt = nimbusJwtDecoder.decode(token);
+        String jwtId = jwt.getId();
+        if (jwtId != null && !authenticationService.isTokenValid(jwtId)) {
+            throw new JwtException("Token đã bị vô hiệu hóa");
+        }
+
+        return jwt;
     }
 
 }
