@@ -1,6 +1,9 @@
 package com.vn.keycap_server.service.auth;
 
+import java.text.ParseException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
@@ -29,6 +32,7 @@ import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.vn.keycap_server.dto.request.LoginGoogleRequest;
 import com.vn.keycap_server.dto.request.LoginRequest;
 import com.vn.keycap_server.dto.request.RegisterRequest;
@@ -38,7 +42,9 @@ import com.vn.keycap_server.dto.response.LoginResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.mapper.UserMapper;
 import com.vn.keycap_server.modal.User;
+import com.vn.keycap_server.modal.UserToken;
 import com.vn.keycap_server.repository.UserRepository;
+import com.vn.keycap_server.repository.UserTokenRepository;
 import com.vn.keycap_server.service.mail.IMailService;
 import com.vn.keycap_server.utils.EOtpPurpose;
 import com.vn.keycap_server.utils.ERole;
@@ -50,6 +56,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthenticationService implements IAuthenticationService {
 
     private final UserRepository userRepository;
+    private final UserTokenRepository userTokenRepository;
 
     @Value("${jwt.signerKey}")
     private String signerKey;
@@ -80,6 +87,7 @@ public class AuthenticationService implements IAuthenticationService {
 
         // Generate Token
         var accessToken = generateToken(user);
+        saveUserToken(user, accessToken);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
@@ -126,6 +134,7 @@ public class AuthenticationService implements IAuthenticationService {
                 });
 
         String accessToken = generateToken(user);
+        saveUserToken(user, accessToken);
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .user(user)
@@ -211,6 +220,7 @@ public class AuthenticationService implements IAuthenticationService {
 
         // Login -> Register Success
         String accessToken = generateToken(user);
+        saveUserToken(user, accessToken);
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .user(user)
@@ -311,6 +321,31 @@ public class AuthenticationService implements IAuthenticationService {
             throw new RuntimeException("Lỗi khi đọc OTP", e);
         }
 
+    }
+
+    private void saveUserToken(User user, String accessToken) {
+        try {
+            // Parse token
+            SignedJWT signedJWT = SignedJWT.parse(accessToken);
+            JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+            // Lấy jwtId
+            String jwtId = claims.getJWTID();
+            // Lấy expiresAt
+            LocalDateTime expiresAt = LocalDateTime.ofInstant(
+                    claims.getExpirationTime().toInstant(),
+                    ZoneId.systemDefault());
+            // Tạo UserToken record
+            UserToken userToken = UserToken.builder()
+                    .user(user)
+                    .refreshToken(jwtId) // Lưu jwtId vào field refreshToken
+                    .isRevoked(false) // Token đang hoạt động
+                    .expiresAt(expiresAt) // Thời hạn token
+                    .build();
+            // Lưu vào DB
+            userTokenRepository.save(userToken);
+        } catch (ParseException e) {
+            throw new RuntimeException("Không thể parse token", e);
+        }
     }
 
 }

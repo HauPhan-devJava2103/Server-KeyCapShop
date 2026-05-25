@@ -59,5 +59,5 @@ public class User extends AbstractEntity {
     // Relationship
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<InvalidatedToken> tokens;
+    private List<UserToken> tokens;
 }
