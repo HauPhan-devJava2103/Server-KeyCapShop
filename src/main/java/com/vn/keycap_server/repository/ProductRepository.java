@@ -3,6 +3,9 @@ package com.vn.keycap_server.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.vn.keycap_server.modal.Product;
 
@@ -17,4 +20,13 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     // Sử dụng Specification để lọc động, nên một số câu truy vấn cần điệu kiện phức
     // tạp không cần tạo câu truy vấn riêng trong Repository chỉ kế thừa các method
     // mặc định. Nếu có câu truy vấn đặc biệt khác, ta có thể viết thêm bằng @Query.
+
+    /**
+     * Lấy các sản phẩm mới được cập nhật gần đây.
+     * 
+     * @param date     ngày cập nhật tối thiểu
+     * @param pageable thông tin phân trang
+     * @return Page<Product> danh sách sản phẩm
+     */
+    Page<Product> findByUpdatedAtAfter(LocalDate date, Pageable pageable);
 }

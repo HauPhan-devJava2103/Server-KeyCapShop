@@ -1,11 +1,13 @@
 package com.vn.keycap_server.service.product;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -15,8 +17,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.vn.keycap_server.dto.ApiResponse;
-import com.vn.keycap_server.dto.PaginationMeta;
 import com.vn.keycap_server.dto.request.product.ListProductRequest;
 import com.vn.keycap_server.dto.response.product.ProductCardResponse;
 import com.vn.keycap_server.exception.BadRequestException;
@@ -26,7 +26,6 @@ import com.vn.keycap_server.repository.ProductRepository;
 import com.vn.keycap_server.repository.WishlistRepository;
 import com.vn.keycap_server.repository.specification.ProductSpecification;
 import com.vn.keycap_server.utils.ESortOption;
-import com.vn.keycap_server.utils.PaginationUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,15 +41,20 @@ public class ProductService implements IProductService {
     private final ProductMapper productMapper;
     private final WishlistRepository wishlistRepository;
 
+    // =================================================
+    // Triển khai các phương thức trong IProductService
+    // =================================================
+
     /**
      * Lấy danh sách sản phẩm dạng card theo tiêu chí lọc và phân trang.
      *
      * @param request DTO lọc sản phẩm từ client
-     * @return ApiResponse chứa danh sách ProductCardResponse và PaginationMeta
+     * @return Page<ProductCardResponse> chứa danh sách sản phẩm và thông tin phân
+     *         trang thô
      */
     @Override
     @Transactional(readOnly = true)
-    public ApiResponse getAllProducts(ListProductRequest request) {
+    public Page<ProductCardResponse> getAllProducts(ListProductRequest request) {
         ListProductRequest safeRequest = (request != null) ? request : new ListProductRequest();
 
         validateListRequest(safeRequest); // Kiểm tra các điều kiện bổ sung không nằm trong validation annotations
@@ -84,10 +88,48 @@ public class ProductService implements IProductService {
                 })
                 .collect(Collectors.toList());
 
-        PaginationMeta pagination = PaginationUtils.buildPaginationMeta(productPage, safeRequest.getPage());
-        return ApiResponse.success("Lấy danh sách sản phẩm thành công", productCards, pagination);
+        // Trả về Page<ProductCardResponse> thô, Controller sẽ tự đóng gói ApiResponse
+        return new PageImpl<>(productCards, pageable, productPage.getTotalElements());
     }
 
+    /**
+     * Lấy danh sách sản phẩm mới được cập nhật gần đây.
+     *
+     * @param limit số lượng sản phẩm cần lấy
+     * @return Page<ProductCardResponse> chứa danh sách sản phẩm và thông tin phân
+     *         trang thô
+     */
+    private static final int DEFAULT_NEWLY_UPDATED_LIMIT = 10; // Số lượng sản phẩm mới được cập nhật mặc định
+    private static final int DEFAULT_NEWLY_UPDATED_DAYS = 30; // Số ngày được xem là cập nhật gần đây
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductCardResponse> getNewlyUpdatedProducts(int limit) {
+        int safeLimit = normalizeNewlyUpdatedLimit(limit);
+        Long currentUserId = getCurrentUserId();
+
+        Page<Product> productPage = getNewlyUpdatedProductsPage(safeLimit);
+
+        Set<Long> favoriteProductIds = (currentUserId != null && !productPage.getContent().isEmpty())
+                ? new HashSet<>(wishlistRepository.findFavoriteProductIds(currentUserId))
+                : new HashSet<>();
+
+        List<ProductCardResponse> productCards = productPage.getContent().stream()
+                .map(product -> {
+                    ProductCardResponse card = productMapper.productToProductCardResponse(product);
+                    boolean isFavorite = currentUserId != null && favoriteProductIds.contains(product.getId());
+                    card.setFavorite(isFavorite);
+                    return card;
+                })
+                .collect(Collectors.toList());
+
+        // Trả về Page<ProductCardResponse> thô, Controller sẽ tự đóng gói ApiResponse
+        return new PageImpl<>(productCards, productPage.getPageable(), productPage.getTotalElements());
+    }
+
+    // =================================================
+    // Các phương thức hỗ trợ riêng cho ProductService
+    // =================================================
     /**
      * Lấy ID user từ JWT trong SecurityContext.
      * Nếu chưa đăng nhập hoặc không có claim userId thì trả về null.
@@ -129,5 +171,32 @@ public class ProductService implements IProductService {
                 && request.getPriceMin().compareTo(request.getPriceMax()) > 0) {
             throw new BadRequestException("Giá tối thiểu không được lớn hơn giá tối đa");
         }
+    }
+
+    /**
+     * Truy vấn database để lấy danh sách sản phẩm mới được cập nhật gần đây.
+     *
+     * @param limit số lượng sản phẩm cần lấy
+     * @return Page<Product> trang chứa danh sách sản phẩm
+     */
+    private Page<Product> getNewlyUpdatedProductsPage(int limit) {
+        Pageable pageable = PageRequest.of(0, limit); // Lấy trang đầu tiên với kích thước bằng limit
+        LocalDate dateThreshold = LocalDate.now().minusDays(DEFAULT_NEWLY_UPDATED_DAYS); // Ngày cập nhật tối thiểu
+        return productRepository.findByUpdatedAtAfter(dateThreshold, pageable);
+    }
+
+    /**
+     * Chuẩn hóa giá trị limit cho phương thức getNewlyUpdatedProducts.
+     * Nếu limit không hợp lệ (<= 0) thì trả về giá trị mặc định.
+     * Nếu limit quá lớn thì giới hạn ở mức tối đa để tránh truy vấn quá nhiều dữ
+     * liệu.
+     *
+     * @param limit số lượng sản phẩm cần lấy
+     * @return giá trị limit đã được chuẩn hóa
+     */
+    private int normalizeNewlyUpdatedLimit(int limit) {
+        if (limit <= 0)
+            return DEFAULT_NEWLY_UPDATED_LIMIT; // Sử dụng giá trị mặc định nếu limit không hợp lệ
+        return Math.min(limit, 100); // Giới hạn tối đa để tránh truy vấn quá nhiều dữ liệu
     }
 }
