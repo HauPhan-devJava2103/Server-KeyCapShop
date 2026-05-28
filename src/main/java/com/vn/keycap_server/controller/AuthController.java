@@ -1,6 +1,5 @@
 package com.vn.keycap_server.controller;
 
-import com.vn.keycap_server.configuration.AppConfig;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

@@ -1,6 +1,5 @@
 package com.vn.keycap_server.modal;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 
 import org.hibernate.annotations.OnDelete;

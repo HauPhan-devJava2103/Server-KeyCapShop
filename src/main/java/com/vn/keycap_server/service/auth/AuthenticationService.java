@@ -1,39 +1,19 @@
 package com.vn.keycap_server.service.auth;
 
 import java.text.ParseException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.Date;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSObject;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.Payload;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.vn.keycap_server.configuration.AppConfig;
 import com.vn.keycap_server.dto.request.LoginGoogleRequest;
 import com.vn.keycap_server.dto.request.LoginRequest;
 import com.vn.keycap_server.dto.request.RegisterRequest;
@@ -47,6 +27,7 @@ import com.vn.keycap_server.modal.User;
 import com.vn.keycap_server.modal.UserToken;
 import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.repository.UserTokenRepository;
+import com.vn.keycap_server.service.auth.login.LoginHandlerFactory;
 import com.vn.keycap_server.service.mail.IMailService;
 import com.vn.keycap_server.utils.EOtpPurpose;
 import com.vn.keycap_server.utils.ERole;
@@ -57,90 +38,28 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthenticationService implements IAuthenticationService {
 
+    private final LoginHandlerFactory loginHandlerFactory;
+
+    private final TokenService tokenService;
+
     private final UserRepository userRepository;
     private final UserTokenRepository userTokenRepository;
-
-    @Value("${jwt.signerKey}")
-    private String signerKey;
-
-    @Value("${spring.security.oauth2.client.registration.google.client-id}")
-    private String googleClientId;
 
     private final RedisTemplate<String, String> redisTemplate;
     private final IMailService mailService;
     private final ObjectMapper objectMapper;
     private final UserMapper userMapper;
 
+    private final PasswordEncoder passwordEncoder;
+
     @Override
     public LoginResponse login(LoginRequest request) {
-
-        // Password Encoder
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
-
-        // Find User
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadRequestException("Email hoặc mật khẩu không chính xác"));
-
-        // Password Match
-        boolean isPasswordMatch = passwordEncoder.matches(request.getPassword(), user.getPassword());
-        if (!isPasswordMatch) {
-            throw new BadRequestException("Mật khẩu không chính xác");
-        }
-
-        // Generate Token
-        var accessToken = generateToken(user);
-        saveUserToken(user, accessToken);
-
-        return LoginResponse.builder()
-                .accessToken(accessToken)
-                .user(user)
-                .build();
+        return loginHandlerFactory.<LoginRequest>getHandler("basic").login(request);
     }
 
     @Override
     public LoginResponse loginGoogle(LoginGoogleRequest request) {
-        // Verify tokenId Google
-        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(),
-                GsonFactory.getDefaultInstance())
-                .setAudience(Collections.singletonList(googleClientId))
-                .build();
-
-        GoogleIdToken idToken;
-        try {
-            idToken = verifier.verify(request.getIdToken());
-
-        } catch (Exception e) {
-            throw new BadRequestException("Token Google không hợp lệ");
-
-        }
-        if (idToken == null) {
-            throw new BadRequestException("Token Google không hợp lệ");
-        }
-
-        // Payload Google
-        GoogleIdToken.Payload payload = idToken.getPayload();
-        String email = payload.getEmail();
-        String fullName = (String) payload.get("name");
-        String avatarUrl = (String) payload.get("picture");
-
-        User user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    User newUser = User.builder()
-                            .email(email)
-                            .fullName(fullName)
-                            .avatarUrl(avatarUrl)
-                            .role(ERole.USER)
-                            .password(null)
-                            .build();
-                    return userRepository.save(newUser);
-                });
-
-        String accessToken = generateToken(user);
-        saveUserToken(user, accessToken);
-        return LoginResponse.builder()
-                .accessToken(accessToken)
-                .user(user)
-                .build();
+        return loginHandlerFactory.<LoginGoogleRequest>getHandler("google").login(request);
     }
 
     @Override
@@ -186,7 +105,6 @@ public class AuthenticationService implements IAuthenticationService {
 
     @Override
     public void resetPassword(ResetPasswordRequest request) {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         // Verify OTP and Purpose
         verifyOtp(request.getEmail(), request.getOtp(),
                 EOtpPurpose.FORGOT_PASSWORD, request.getOtpPurpose());
@@ -205,7 +123,6 @@ public class AuthenticationService implements IAuthenticationService {
 
     @Override
     public LoginResponse register(RegisterRequest request) {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         // Verify OTP
         verifyOtp(request.getEmail(), request.getOtp(), EOtpPurpose.REGISTER, request.getOtpPurpose());
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -221,8 +138,8 @@ public class AuthenticationService implements IAuthenticationService {
         userRepository.save(user);
 
         // Login -> Register Success
-        String accessToken = generateToken(user);
-        saveUserToken(user, accessToken);
+        String accessToken = tokenService.generateToken(user);
+        tokenService.saveUserToken(user, accessToken);
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .user(user)
@@ -237,7 +154,7 @@ public class AuthenticationService implements IAuthenticationService {
         }
 
         String token = authHeader.substring(7);
-        SignedJWT signedJWT = verifyToken(token);
+        SignedJWT signedJWT = tokenService.verifyToken(token);
 
         try {
             String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
@@ -260,74 +177,6 @@ public class AuthenticationService implements IAuthenticationService {
     }
 
     // HELPER METHODS
-    // Generate Token
-    private String generateToken(User user) {
-        // Header: MATH HS512
-        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
-
-        // Date Time
-        Date issueTime = new Date();
-        Date expiryTime = new Date(Instant.ofEpochMilli(issueTime.getTime())
-                .plus(1, ChronoUnit.HOURS)
-                .toEpochMilli());
-        // Payload
-        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getEmail()) // Ai đang đăng nhập
-                .issuer("keycap-server") // Ai phát hành token
-                .issueTime(issueTime) // Phát hành lúc nào
-                .expirationTime(expiryTime) // Hết hạn lúc nào
-                .jwtID(UUID.randomUUID().toString()) // ID duy nhất của token
-                .claim("scope", buildScope(user)) // Quyền: ROLE_USER, ROLE_ADMIN
-                .claim("userId", user.getId()) // ID user trong DB
-                .build();
-
-        // Sign Token By Secret Key
-        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-
-        JWSObject jwsObject = new JWSObject(header, payload);
-        try {
-            jwsObject.sign(new MACSigner(signerKey.getBytes()));
-            return jwsObject.serialize();
-        } catch (JOSEException e) {
-            throw new RuntimeException("Can not generate token", e);
-        }
-    }
-
-    private String buildScope(User user) {
-        if (user.getRole() != null) {
-            return "ROLE_" + user.getRole().name();
-        }
-        return "ROLE_USER";
-    }
-
-    private SignedJWT verifyToken(String token) {
-
-        try {
-            JWSVerifier verifier = new MACVerifier(signerKey.getBytes());
-            SignedJWT signedJWT = SignedJWT.parse(token);
-            Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
-
-            var verified = signedJWT.verify(verifier);
-
-            // Check chữ ký + hết hạn
-            if (!verified) {
-                throw new UnauthorizedException("Chữ ký token không hợp lệ");
-            }
-            if (!expiryTime.after(new Date())) {
-                throw new UnauthorizedException("Token đã hết hạn");
-            }
-            // Check token có trong whitelist và chưa bị revoke
-            String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
-            if (!userTokenRepository.existsByRefreshTokenAndIsRevokedFalse(jwtId)) {
-                throw new UnauthorizedException("Token đã bị vô hiệu hóa");
-            }
-
-            return signedJWT;
-        } catch (ParseException | JOSEException e) {
-            throw new UnauthorizedException("Token không hợp lệ");
-        }
-    }
-
     private void verifyOtp(String email, String inputOtp, EOtpPurpose expectedPurpose,
             EOtpPurpose actualPurpose) {
 
@@ -381,28 +230,4 @@ public class AuthenticationService implements IAuthenticationService {
         }
 
     }
-
-    private void saveUserToken(User user, String accessToken) {
-        try {
-            // Parse token
-            SignedJWT signedJWT = SignedJWT.parse(accessToken);
-            JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
-            // Lấy jwtId
-            String jwtId = claims.getJWTID();
-            // Lấy expiresAt
-            Date expiresAt = claims.getExpirationTime();
-            // Tạo UserToken record
-            UserToken userToken = UserToken.builder()
-                    .user(user)
-                    .refreshToken(jwtId) // Lưu jwtId vào field refreshToken
-                    .isRevoked(false) // Token đang hoạt động
-                    .expiresAt(expiresAt) // Thời hạn token
-                    .build();
-            // Lưu vào DB
-            userTokenRepository.save(userToken);
-        } catch (ParseException e) {
-            throw new RuntimeException("Không thể parse token", e);
-        }
-    }
-
 }
