@@ -75,3 +75,27 @@ INSERT INTO wishlists (user_id, product_id, created_at, updated_at) VALUES
   (1, 5, CURRENT_DATE, CURRENT_DATE)
 ON DUPLICATE KEY UPDATE
   updated_at = VALUES(updated_at);
+
+-- Orders (assumes user_id = 1 exists)
+INSERT INTO orders (id, user_id, total_amount, status, shipping_address, phone_number, created_at, updated_at) VALUES
+  (1, 1, 3480000, 'COMPLETED', '123 Main St, Hanoi', '0912345678', CURRENT_DATE - INTERVAL 5 DAY, CURRENT_DATE - INTERVAL 5 DAY),
+  (2, 1, 4480000, 'SHIPPING', '456 Side St, HCMC', '0987654321', CURRENT_DATE - INTERVAL 2 DAY, CURRENT_DATE - INTERVAL 2 DAY),
+  (3, 1, 1290000, 'PENDING', '789 Corner St, Da Nang', '0901234567', CURRENT_DATE, CURRENT_DATE)
+ON DUPLICATE KEY UPDATE
+  status = VALUES(status),
+  total_amount = VALUES(total_amount),
+  shipping_address = VALUES(shipping_address),
+  phone_number = VALUES(phone_number),
+  updated_at = VALUES(updated_at);
+
+-- Order Items
+INSERT INTO order_items (id, order_id, product_id, quantity, price, created_at, updated_at) VALUES
+  (1, 1, 1, 1, 2590000, CURRENT_DATE - INTERVAL 5 DAY, CURRENT_DATE - INTERVAL 5 DAY),
+  (2, 1, 3, 1, 890000, CURRENT_DATE - INTERVAL 5 DAY, CURRENT_DATE - INTERVAL 5 DAY),
+  (3, 2, 2, 1, 3990000, CURRENT_DATE - INTERVAL 2 DAY, CURRENT_DATE - INTERVAL 2 DAY),
+  (4, 2, 5, 1, 490000, CURRENT_DATE - INTERVAL 2 DAY, CURRENT_DATE - INTERVAL 2 DAY),
+  (5, 3, 8, 1, 1290000, CURRENT_DATE, CURRENT_DATE)
+ON DUPLICATE KEY UPDATE
+  quantity = VALUES(quantity),
+  price = VALUES(price),
+  updated_at = VALUES(updated_at);

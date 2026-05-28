@@ -81,4 +81,38 @@ public class ProductController {
                 .pagination(meta)
                 .build());
     }
+
+    /**
+     * API GET /products/popular lấy danh sách sản phẩm được nhiều người quan tâm nhất.
+     * Tiêu chí: số lượng bán ra nhiều nhất.
+     */
+    @GetMapping("/popular")
+    public ResponseEntity<ApiResponse> getPopularProducts(@RequestParam(defaultValue = "10") int limit) {
+        Page<ProductCardResponse> resultPage = productService.getPopularProducts(limit);
+        PaginationMeta meta = PaginationUtils.buildPaginationMeta(resultPage, 1);
+        
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Lấy danh sách sản phẩm phổ biến thành công")
+                .data(resultPage.getContent())
+                .pagination(meta)
+                .build());
+    }
+
+    /**
+     * API GET /products/hot-brand lấy danh sách các sản phẩm từ các thương hiệu 
+     * có số lượng sản phẩm bán chạy nhất.
+     */
+    @GetMapping("/hot-brand")
+    public ResponseEntity<ApiResponse> getProductsByHotBrand(@RequestParam(defaultValue = "10") int limit) {
+        Page<ProductCardResponse> resultPage = productService.getProductsByHotBrand(limit);
+        PaginationMeta meta = PaginationUtils.buildPaginationMeta(resultPage, 1);
+        
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Lấy danh sách sản phẩm bán chạy theo thương hiệu thành công")
+                .data(resultPage.getContent())
+                .pagination(meta)
+                .build());
+    }
 }

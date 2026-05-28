@@ -1,11 +1,13 @@
 package com.vn.keycap_server.repository;
 
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
-import java.time.LocalDate;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import com.vn.keycap_server.modal.Product;
 
@@ -29,4 +31,17 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
      * @return Page<Product> danh sách sản phẩm
      */
     Page<Product> findByUpdatedAtAfter(LocalDate date, Pageable pageable);
+
+    /**
+     * Lấy danh sách sản phẩm theo danh sách ID.
+     *
+     * @param ids danh sách ID sản phẩm
+     * @return danh sách Product
+     */
+    List<Product> findByIdIn(List<Long> ids);
+
+    /**
+     * Lấy danh sách sản phẩm thuộc một danh sách thương hiệu.
+     */
+    Page<Product> findByBrandIdIn(List<Long> brandIds, Pageable pageable);
 }

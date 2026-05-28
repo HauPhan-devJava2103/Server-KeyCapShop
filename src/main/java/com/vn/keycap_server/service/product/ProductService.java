@@ -3,6 +3,8 @@ package com.vn.keycap_server.service.product;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,6 +24,7 @@ import com.vn.keycap_server.dto.response.product.ProductCardResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.mapper.ProductMapper;
 import com.vn.keycap_server.modal.Product;
+import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.ProductRepository;
 import com.vn.keycap_server.repository.WishlistRepository;
 import com.vn.keycap_server.repository.specification.ProductSpecification;
@@ -40,6 +43,7 @@ public class ProductService implements IProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final WishlistRepository wishlistRepository;
+    private final OrderItemRepository orderItemRepository;
 
     // =================================================
     // Triển khai các phương thức trong IProductService
@@ -105,7 +109,7 @@ public class ProductService implements IProductService {
     @Override
     @Transactional(readOnly = true)
     public Page<ProductCardResponse> getNewlyUpdatedProducts(int limit) {
-        int safeLimit = normalizeNewlyUpdatedLimit(limit);
+        int safeLimit = normalizeLimit(limit, DEFAULT_NEWLY_UPDATED_LIMIT);
         Long currentUserId = getCurrentUserId();
 
         Page<Product> productPage = getNewlyUpdatedProductsPage(safeLimit);
@@ -124,6 +128,100 @@ public class ProductService implements IProductService {
                 .collect(Collectors.toList());
 
         // Trả về Page<ProductCardResponse> thô, Controller sẽ tự đóng gói ApiResponse
+        return new PageImpl<>(productCards, productPage.getPageable(), productPage.getTotalElements());
+    }
+
+    // Số lượng sản phẩm phổ biến tối đa mặc định
+    private static final int DEFAULT_POPULAR_LIMIT = 10;
+    // Thời gian xét sản phẩm phổ biến (trong vòng 30 ngày)
+    private static final int DEFAULT_POPULAR_DAYS = 30;
+
+    /**
+     * Lấy danh sách sản phẩm được nhiều người quan tâm nhất.
+     *
+     * @param limit số lượng sản phẩm cần lấy
+     * @return Page<ProductCardResponse> chứa danh sách sản phẩm và thông tin phân
+     *         trang thô
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductCardResponse> getPopularProducts(int limit) {
+        int safeLimit = normalizeLimit(limit, DEFAULT_POPULAR_LIMIT);
+        Long currentUserId = getCurrentUserId();
+
+        LocalDate since = LocalDate.now().minusDays(DEFAULT_POPULAR_DAYS);
+        Pageable pageable = PageRequest.of(0, safeLimit);
+        // Sử dụng OrderItemRepository để lấy sản phẩm bán chạy nhất
+        List<Long> popularIds = orderItemRepository.findTopSellingProductIds(since, pageable);
+
+        if (popularIds.isEmpty()) {
+            return Page.empty();
+        }
+
+        List<Product> products = productRepository.findByIdIn(popularIds);
+
+        Map<Long, Product> productMap = products.stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+        List<Product> orderedProducts = popularIds.stream()
+                .map(productMap::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        Set<Long> favoriteProductIds = (currentUserId != null)
+                ? new HashSet<>(wishlistRepository.findFavoriteProductIds(currentUserId))
+                : new HashSet<>();
+
+        List<ProductCardResponse> productCards = orderedProducts.stream()
+                .map(product -> {
+                    ProductCardResponse card = productMapper.productToProductCardResponse(product);
+                    card.setFavorite(currentUserId != null && favoriteProductIds.contains(product.getId()));
+                    return card;
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(productCards, pageable, productCards.size());
+    }
+
+    // Số lượng sản phẩm bán chạy theo thương hiệu tối đa mặc định
+    private static final int DEFAULT_HOT_BRAND_LIMIT = 10;
+
+    /**
+     * Lấy danh sách các sản phẩm từ thương hiệu có số lượng sản phẩm bán chạy nhất.
+     *
+     * @param limit số lượng sản phẩm cần lấy
+     * @return Page<ProductCardResponse> chứa danh sách sản phẩm và thông tin phân
+     *         trang thô
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductCardResponse> getProductsByHotBrand(int limit) {
+        int safeLimit = normalizeLimit(limit, DEFAULT_HOT_BRAND_LIMIT);
+        Long currentUserId = getCurrentUserId();
+
+        // Lấy ID của thương hiệu có số lượng bán ra nhiều nhất
+        Pageable topBrandPageable = PageRequest.of(0, 1);
+        List<Long> topBrandIds = orderItemRepository.findTopSellingBrandIds(topBrandPageable);
+
+        if (topBrandIds.isEmpty()) {
+            return Page.empty();
+        }
+
+        // Lấy danh sách sản phẩm thuộc thương hiệu đó
+        Pageable pageable = PageRequest.of(0, safeLimit);
+        Page<Product> productPage = productRepository.findByBrandIdIn(topBrandIds, pageable);
+
+        Set<Long> favoriteProductIds = (currentUserId != null && !productPage.getContent().isEmpty())
+                ? new HashSet<>(wishlistRepository.findFavoriteProductIds(currentUserId))
+                : new HashSet<>();
+
+        List<ProductCardResponse> productCards = productPage.getContent().stream()
+                .map(product -> {
+                    ProductCardResponse card = productMapper.productToProductCardResponse(product);
+                    card.setFavorite(currentUserId != null && favoriteProductIds.contains(product.getId()));
+                    return card;
+                })
+                .collect(Collectors.toList());
+
         return new PageImpl<>(productCards, productPage.getPageable(), productPage.getTotalElements());
     }
 
@@ -194,9 +292,9 @@ public class ProductService implements IProductService {
      * @param limit số lượng sản phẩm cần lấy
      * @return giá trị limit đã được chuẩn hóa
      */
-    private int normalizeNewlyUpdatedLimit(int limit) {
+    private int normalizeLimit(int limit, int defaultLimit) {
         if (limit <= 0)
-            return DEFAULT_NEWLY_UPDATED_LIMIT; // Sử dụng giá trị mặc định nếu limit không hợp lệ
+            return defaultLimit; // Sử dụng giá trị mặc định nếu limit không hợp lệ
         return Math.min(limit, 100); // Giới hạn tối đa để tránh truy vấn quá nhiều dữ liệu
     }
 }

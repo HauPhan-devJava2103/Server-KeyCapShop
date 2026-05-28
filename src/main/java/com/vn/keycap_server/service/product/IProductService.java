@@ -31,4 +31,23 @@ public interface IProductService {
      *         trang thô
      */
     Page<ProductCardResponse> getNewlyUpdatedProducts(int limit);
+
+    /**
+     * Lấy danh sách sản phẩm được nhiều người quan tâm nhất trong 1 tháng gần nhất.
+     * sắp xếp theo số lượt wishlist giảm dần.
+     * 
+     * @param limit số lượng sản phẩm cần lấy
+     * @return Page<ProductCardResponse> chứa danh sách sản phẩm và thông tin phân
+     *         trang thô
+     */
+    Page<ProductCardResponse> getPopularProducts(int limit);
+
+    /**
+     * Lấy danh sách sản phẩm từ các thương hiệu có số lượng sản phẩm bán chạy nhất.
+     * 
+     * @param limit số lượng sản phẩm cần lấy
+     * @return Page<ProductCardResponse> chứa danh sách sản phẩm và thông tin phân
+     *         trang thô
+     */
+    Page<ProductCardResponse> getProductsByHotBrand(int limit);
 }
