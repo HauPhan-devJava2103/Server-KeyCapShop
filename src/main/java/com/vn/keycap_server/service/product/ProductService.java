@@ -21,16 +21,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.vn.keycap_server.dto.request.product.ListProductRequest;
 import com.vn.keycap_server.dto.request.product.ListRecommendProductRequest;
+import com.vn.keycap_server.dto.response.product.FilterItemResponse;
+import com.vn.keycap_server.dto.response.product.FilterModelResponse;
 import com.vn.keycap_server.dto.response.product.ProductCardResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.mapper.ProductMapper;
 import com.vn.keycap_server.modal.Product;
 import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.ProductRepository;
+import com.vn.keycap_server.repository.ProductTypeRepository;
 import com.vn.keycap_server.repository.WishlistRepository;
 import com.vn.keycap_server.repository.specification.ProductSpecification;
 import com.vn.keycap_server.utils.ESortOption;
-
+import com.vn.keycap_server.repository.BrandRepository;
+import com.vn.keycap_server.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -45,6 +49,9 @@ public class ProductService implements IProductService {
     private final ProductMapper productMapper;
     private final WishlistRepository wishlistRepository;
     private final OrderItemRepository orderItemRepository;
+    private final CategoryRepository categoryRepository;
+    private final ProductTypeRepository typeRepository;
+    private final BrandRepository brandRepository;
 
     // =================================================
     // Triển khai các phương thức trong IProductService
@@ -280,6 +287,45 @@ public class ProductService implements IProductService {
                 .collect(Collectors.toList());
         // Trả về Page<ProductCardResponse> thô, Controller sẽ tự đóng gói ApiResponse
         return new PageImpl<>(productCards, pageable, productPage.getTotalElements());
+    }
+
+    /**
+     * Lấy danh sách các bộ lọc cho sản phẩm (Danh mục, Loại sản phẩm, Thương hiệu).
+     * 
+     * @return FilterModelResponse chứa danh sách các tùy chọn lọc
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public FilterModelResponse getFilter() {
+        List<FilterItemResponse> categories = categoryRepository.findAll().stream()
+                .map(c -> FilterItemResponse.builder()
+                        .id(c.getId().toString())
+                        .name(c.getName())
+                        .slug(c.getSlug())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<FilterItemResponse> types = typeRepository.findAll().stream()
+                .map(t -> FilterItemResponse.builder()
+                        .id(t.getId().toString())
+                        .name(t.getName())
+                        .slug(t.getSlug())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<FilterItemResponse> brands = brandRepository.findAll().stream()
+                .map(b -> FilterItemResponse.builder()
+                        .id(b.getId().toString())
+                        .name(b.getName())
+                        .slug(b.getSlug())
+                        .build())
+                .collect(Collectors.toList());
+
+        return FilterModelResponse.builder()
+                .category(categories)
+                .type(types)
+                .brand(brands)
+                .build();
     }
 
     // =================================================

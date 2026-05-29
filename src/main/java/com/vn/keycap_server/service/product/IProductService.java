@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import com.vn.keycap_server.dto.request.product.ListProductRequest;
 import com.vn.keycap_server.dto.response.product.ProductCardResponse;
 import com.vn.keycap_server.dto.request.product.ListRecommendProductRequest;
+import com.vn.keycap_server.dto.response.product.FilterModelResponse;
 
 /**
  * IProductService định nghĩa các nghiệp vụ liên quan đến quản lý sản phẩm.
@@ -60,4 +61,11 @@ public interface IProductService {
      *         trang thô
      */
     Page<ProductCardResponse> getRecommendProducts(ListRecommendProductRequest request);
+
+    /**
+     * Lấy danh sách các bộ lọc cho sản phẩm (Danh mục, Loại sản phẩm, Thương hiệu).
+     * 
+     * @return FilterModelResponse chứa danh sách các tùy chọn lọc
+     */
+    FilterModelResponse getFilter();
 }

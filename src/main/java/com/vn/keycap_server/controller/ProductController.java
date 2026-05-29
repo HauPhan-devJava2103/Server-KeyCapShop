@@ -127,7 +127,7 @@ public class ProductController {
      * @param request DTO chứa các tham số lọc từ Frontend gửi lên
      * @return ResponseEntity chứa ApiResponse chuẩn hóa
      */
-    @GetMapping("/recommend")
+    @GetMapping("/recommended")
     public ResponseEntity<ApiResponse> getRecommendProducts(
             @Valid @ModelAttribute ListRecommendProductRequest request) {
         Page<ProductCardResponse> resultPage = productService.getRecommendProducts(request);
@@ -137,6 +137,19 @@ public class ProductController {
                 .message("Lấy danh sách sản phẩm đề xuất thành công")
                 .data(resultPage.getContent())
                 .pagination(meta)
+                .build());
+    }
+
+    /**
+     * API GET /products/filter lấy danh sách các tùy chọn lọc (Danh mục, Loại,
+     * Thương hiệu).
+     */
+    @GetMapping("/filter")
+    public ResponseEntity<ApiResponse> getFilter() {
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Lấy thông tin bộ lọc thành công")
+                .data(productService.getFilter())
                 .build());
     }
 }
