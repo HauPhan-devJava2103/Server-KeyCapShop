@@ -6,10 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vn.keycap_server.dto.ApiResponse;
@@ -69,11 +69,11 @@ public class CartController {
     }
 
     /**
-     * DELETE /cart/items
-     * Mô tả: Xóa một sản phẩm khỏi giỏ hàng.
+     * DELETE /cart/items/{productId}
+     * Cập nhật URL pattern để hứng Path Variable
      */
-    @DeleteMapping("/items")
-    public ResponseEntity<ApiResponse> deleteCartItem(@RequestParam("productId") Long productId) {
+    @DeleteMapping("/items/{productId}")
+    public ResponseEntity<ApiResponse> deleteCartItem(@PathVariable Long productId) {
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Xóa khỏi giỏ hàng thành công")
