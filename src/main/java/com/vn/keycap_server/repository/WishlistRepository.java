@@ -24,13 +24,4 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
      */
     @Query("select w.product.id from Wishlist w where w.user.id = :userId")
     List<Long> findFavoriteProductIds(@Param("userId") Long userId);
-
-    /**
-     * Kiểm tra xem user có yêu thích sản phẩm này không.
-     *
-     * @param userId    ID của user
-     * @param productId ID của sản phẩm
-     * @return true nếu sản phẩm có trong wishlist của user, false nếu không
-     */
-    boolean existsByUserIdAndProductId(Long userId, Long productId);
 }

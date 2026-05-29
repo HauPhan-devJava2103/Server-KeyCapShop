@@ -8,6 +8,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import com.vn.keycap_server.dto.request.product.ListProductRequest;
+import com.vn.keycap_server.dto.request.product.ListRecommendProductRequest;
 import com.vn.keycap_server.modal.Product;
 
 import jakarta.persistence.criteria.Predicate;
@@ -18,6 +19,13 @@ import jakarta.persistence.criteria.Predicate;
  */
 public class ProductSpecification {
 
+    /***
+     * Tạo Specification để lọc sản phẩm dựa trên các tiêu chí trong
+     * ListProductRequest.
+     * 
+     * @param filter
+     * @return
+     */
     public static Specification<Product> filterProducts(ListProductRequest filter) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -70,5 +78,22 @@ public class ProductSpecification {
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    /**
+     * Tạo Specification mới cho việc lọc sản phẩm đề xuất, loại trừ các loại sản
+     * phẩm không mong muốn.
+     * 
+     * @param filter
+     * @return
+     */
+    public static Specification<Product> filterRecommendProducts(ListRecommendProductRequest filter) {
+        return Specification
+                .allOf(filterProducts(filter)) // Gọi hàm cũ
+                .and((root, query, cb) -> { // Nối điều kiện mới
+                    if (CollectionUtils.isEmpty(filter.getExcludeTypes()))
+                        return cb.conjunction();
+                    return root.get("type").get("slug").in(filter.getExcludeTypes()).not();
+                });
     }
 }

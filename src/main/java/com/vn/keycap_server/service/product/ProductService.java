@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.vn.keycap_server.dto.request.product.ListProductRequest;
+import com.vn.keycap_server.dto.request.product.ListRecommendProductRequest;
 import com.vn.keycap_server.dto.response.product.ProductCardResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.mapper.ProductMapper;
@@ -141,44 +142,60 @@ public class ProductService implements IProductService {
      *
      * @param limit số lượng sản phẩm cần lấy
      * @return Page<ProductCardResponse> chứa danh sách sản phẩm và thông tin phân
-     *         trang thô
+     *         trang
      */
     @Override
     @Transactional(readOnly = true)
     public Page<ProductCardResponse> getPopularProducts(int limit) {
+        // Chuẩn hóa số lượng phần tử cần lấy để tránh giá trị âm hoặc quá lớn
         int safeLimit = normalizeLimit(limit, DEFAULT_POPULAR_LIMIT);
+        // Lấy ID của người dùng hiện tại từ hệ thống để kiểm tra trạng thái yêu thích
         Long currentUserId = getCurrentUserId();
 
+        // Xác định mốc thời gian bắt đầu để thống kê sản phẩm phổ biến
         LocalDate since = LocalDate.now().minusDays(DEFAULT_POPULAR_DAYS);
+        // Khởi tạo đối tượng phân trang với trang đầu tiên và kích thước safeLimit
         Pageable pageable = PageRequest.of(0, safeLimit);
         // Sử dụng OrderItemRepository để lấy sản phẩm bán chạy nhất
         List<Long> popularIds = orderItemRepository.findTopSellingProductIds(since, pageable);
 
+        // Trả về trang trống nếu không tìm thấy danh sách ID sản phẩm bán chạy nào
         if (popularIds.isEmpty()) {
             return Page.empty();
         }
 
+        // Truy vấn thông tin chi tiết các sản phẩm dựa trên danh sách ID đã tìm thấy
         List<Product> products = productRepository.findByIdIn(popularIds);
 
+        // Chuyển đổi danh sách sản phẩm thành Map để tối ưu hóa tốc độ tìm kiếm theo ID
         Map<Long, Product> productMap = products.stream()
                 .collect(Collectors.toMap(Product::getId, p -> p));
+        // Tái cấu trúc danh sách sản phẩm để giữ đúng thứ tự sắp xếp theo danh sách
+        // popularIds ban đầu
         List<Product> orderedProducts = popularIds.stream()
                 .map(productMap::get)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
+        // Lấy danh sách ID sản phẩm đã thích của người dùng nếu họ đã đăng nhập nhằm
+        // tối ưu câu lệnh IN
         Set<Long> favoriteProductIds = (currentUserId != null)
                 ? new HashSet<>(wishlistRepository.findFavoriteProductIds(currentUserId))
                 : new HashSet<>();
 
+        // Ánh xạ danh sách Entity Product sang DTO ProductCardResponse và cập nhật cờ
+        // yêu thích
         List<ProductCardResponse> productCards = orderedProducts.stream()
                 .map(product -> {
                     ProductCardResponse card = productMapper.productToProductCardResponse(product);
+                    // Kiểm tra và gán trạng thái yêu thích dựa trên tập hợp favoriteProductIds
                     card.setFavorite(currentUserId != null && favoriteProductIds.contains(product.getId()));
                     return card;
                 })
                 .collect(Collectors.toList());
 
+        // Tạo và trả về đối tượng PageImpl chứa kết quả cùng thông tin phân trang cấu
+        // hình
         return new PageImpl<>(productCards, pageable, productCards.size());
     }
 
@@ -225,31 +242,78 @@ public class ProductService implements IProductService {
         return new PageImpl<>(productCards, productPage.getPageable(), productPage.getTotalElements());
     }
 
+    // Số lượng sản phẩm đề xuất tối đa mặc định
+    private static final int DEFAULT_RECOMMEND_LIMIT = 10;
+
+    /**
+     * Lấy danh sách sản phẩm đề xuất dựa trên các tiêu chí lọc.
+     * 
+     * @param request DTO chứa các tham số lọc từ Frontend gửi lên
+     * 
+     * @return
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductCardResponse> getRecommendProducts(ListRecommendProductRequest request) {
+        // Chuẩn hóa số lượng phần tử cần lấy để tránh giá trị âm hoặc quá lớn
+        int safeSize = normalizeLimit(request.getLimit(), DEFAULT_RECOMMEND_LIMIT);
+        // Lấy ID của người dùng hiện tại từ hệ thống để kiểm tra trạng thái yêu thích
+        Long currentUserId = getCurrentUserId();
+        // Tạo đối tượng Pageable với trang đầu tiên và kích thước safeSize
+        Pageable pageable = PageRequest.of(0, safeSize);
+        // Tạo Specification động dựa trên các tiêu chí lọc trong request
+        Specification<Product> specification = ProductSpecification.filterRecommendProducts(request);
+        // Truy vấn database để lấy danh sách sản phẩm phù hợp với tiêu chí đề xuất
+        Page<Product> productPage = productRepository.findAll(specification, pageable);
+        // Lấy danh sách ID sản phẩm yêu thích của user từ database chỉ một lần duy nhất
+        // để tối ưu hiệu suất
+        Set<Long> favoriteProductIds = (currentUserId != null && !productPage.getContent().isEmpty())
+                ? new HashSet<>(wishlistRepository.findFavoriteProductIds(currentUserId))
+                : new HashSet<>();
+        List<ProductCardResponse> productCards = productPage.getContent().stream()
+                .map(product -> {
+                    ProductCardResponse card = productMapper.productToProductCardResponse(product);
+                    boolean isFavorite = currentUserId != null && favoriteProductIds.contains(product.getId());
+                    card.setFavorite(isFavorite);
+                    return card;
+                })
+                .collect(Collectors.toList());
+        // Trả về Page<ProductCardResponse> thô, Controller sẽ tự đóng gói ApiResponse
+        return new PageImpl<>(productCards, pageable, productPage.getTotalElements());
+    }
+
     // =================================================
     // Các phương thức hỗ trợ riêng cho ProductService
     // =================================================
     /**
-     * Lấy ID user từ JWT trong SecurityContext.
-     * Nếu chưa đăng nhập hoặc không có claim userId thì trả về null.
+     * Lấy ID của người dùng hiện tại đang đăng nhập từ Security Context.
+     * Hàm thực hiện trích xuất và ép kiểu an toàn từ JWT Claim "userId".
      *
-     * @return userId hoặc null nếu chưa auth
+     * @return Long ID của người dùng nếu hợp lệ, ngược lại trả về null.
      */
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        // Kiểm tra xem Authentication có phải là instance của JwtAuthenticationToken
+        // hay không
         if (!(authentication instanceof JwtAuthenticationToken jwtAuthenticationToken)) {
             return null;
         }
+        // Kiểm tra trạng thái xác thực của token
         if (!jwtAuthenticationToken.isAuthenticated()) {
             return null;
         }
+        // Trích xuất claim "userId" từ danh sách thuộc tính của JWT Token
         Object userIdClaim = jwtAuthenticationToken.getTokenAttributes().get("userId");
+        // Xử lý trường hợp userIdClaim là kiểu số (Number)
         if (userIdClaim instanceof Number) {
             return ((Number) userIdClaim).longValue();
         }
+        // Xử lý trường hợp userIdClaim là kiểu chuỗi (String) và chuyển đổi sang Long
         if (userIdClaim instanceof String userIdText) {
             try {
                 return Long.parseLong(userIdText);
             } catch (NumberFormatException e) {
+                // Trả về null nếu định dạng chuỗi không thể parse thành số nguyên kiểu Long
                 return null;
             }
         }

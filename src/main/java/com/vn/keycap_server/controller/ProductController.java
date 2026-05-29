@@ -12,6 +12,7 @@ import com.vn.keycap_server.dto.ApiResponse;
 import com.vn.keycap_server.dto.PaginationMeta;
 import com.vn.keycap_server.dto.request.product.ListProductRequest;
 import com.vn.keycap_server.dto.response.product.ProductCardResponse;
+import com.vn.keycap_server.dto.request.product.ListRecommendProductRequest;
 import com.vn.keycap_server.service.product.IProductService;
 import com.vn.keycap_server.utils.PaginationUtils;
 
@@ -83,14 +84,15 @@ public class ProductController {
     }
 
     /**
-     * API GET /products/popular lấy danh sách sản phẩm được nhiều người quan tâm nhất.
+     * API GET /products/popular lấy danh sách sản phẩm được nhiều người quan tâm
+     * nhất.
      * Tiêu chí: số lượng bán ra nhiều nhất.
      */
     @GetMapping("/popular")
     public ResponseEntity<ApiResponse> getPopularProducts(@RequestParam(defaultValue = "10") int limit) {
         Page<ProductCardResponse> resultPage = productService.getPopularProducts(limit);
         PaginationMeta meta = PaginationUtils.buildPaginationMeta(resultPage, 1);
-        
+
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Lấy danh sách sản phẩm phổ biến thành công")
@@ -100,17 +102,39 @@ public class ProductController {
     }
 
     /**
-     * API GET /products/hot-brand lấy danh sách các sản phẩm từ các thương hiệu 
+     * API GET /products/hot-brand lấy danh sách các sản phẩm từ các thương hiệu
      * có số lượng sản phẩm bán chạy nhất.
      */
     @GetMapping("/hot-brand")
     public ResponseEntity<ApiResponse> getProductsByHotBrand(@RequestParam(defaultValue = "10") int limit) {
         Page<ProductCardResponse> resultPage = productService.getProductsByHotBrand(limit);
         PaginationMeta meta = PaginationUtils.buildPaginationMeta(resultPage, 1);
-        
+
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Lấy danh sách sản phẩm bán chạy theo thương hiệu thành công")
+                .data(resultPage.getContent())
+                .pagination(meta)
+                .build());
+    }
+
+    /**
+     * API GET /products/recommend lấy danh sách sản phẩm đề xuất dựa trên các tiêu
+     * chí lọc.
+     * Tiêu chí có thể bao gồm: sản phẩm cùng loại, sản phẩm cùng thương hiệu, sản
+     * phẩm được wishlist nhiều, v.v.
+     * 
+     * @param request DTO chứa các tham số lọc từ Frontend gửi lên
+     * @return ResponseEntity chứa ApiResponse chuẩn hóa
+     */
+    @GetMapping("/recommend")
+    public ResponseEntity<ApiResponse> getRecommendProducts(
+            @Valid @ModelAttribute ListRecommendProductRequest request) {
+        Page<ProductCardResponse> resultPage = productService.getRecommendProducts(request);
+        PaginationMeta meta = PaginationUtils.buildPaginationMeta(resultPage, request.getPage());
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Lấy danh sách sản phẩm đề xuất thành công")
                 .data(resultPage.getContent())
                 .pagination(meta)
                 .build());

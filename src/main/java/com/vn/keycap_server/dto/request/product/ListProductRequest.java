@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.experimental.SuperBuilder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -14,7 +15,7 @@ import lombok.NoArgsConstructor;
  * DTO này được thiết kế để nhận dữ liệu "phẳng" từ query parameters của URL.
  */
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ListProductRequest {
@@ -42,7 +43,8 @@ public class ListProductRequest {
     private List<String> brandSlugs;
 
     // Trạng thái tồn kho
-    private Boolean inStock;
+    @Builder.Default
+    private Boolean inStock = true; // Mặc định chỉ lấy sản phẩm còn hàng
 
     // Kiểu sắp xếp
     private String sort;
