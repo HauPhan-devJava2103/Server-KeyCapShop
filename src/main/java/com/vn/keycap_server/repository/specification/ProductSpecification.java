@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 import com.vn.keycap_server.dto.request.product.ListProductRequest;
 import com.vn.keycap_server.dto.request.product.ListRecommendProductRequest;
 import com.vn.keycap_server.modal.Product;
+import com.vn.keycap_server.utils.EProductStatus;
 
 import jakarta.persistence.criteria.Predicate;
 
@@ -30,8 +31,11 @@ public class ProductSpecification {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            // 0.Luôn chỉ lấy sản phẩm có trạng thái AVAILABLE
+            predicates.add(criteriaBuilder.equal(root.get("status"), EProductStatus.AVAILABLE));
+            // Nếu filter null thì trả về tất cả sản phẩm có trạng thái AVAILABLE
             if (filter == null) {
-                return criteriaBuilder.conjunction();
+                return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
             }
 
             // 1. Tìm kiếm theo từ khóa (tên hoặc slug)

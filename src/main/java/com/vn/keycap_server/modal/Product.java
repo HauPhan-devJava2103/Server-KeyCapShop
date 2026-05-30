@@ -1,6 +1,9 @@
 package com.vn.keycap_server.modal;
 
 import java.math.BigDecimal;
+
+import com.vn.keycap_server.utils.EProductStatus;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -46,6 +49,12 @@ public class Product extends AbstractEntity {
     // Số lượng tồn kho
     @Column(name = "stock", nullable = false)
     private Integer stock;
+
+    // Trạng thái sản phẩm (AVAILABLE hoặc UNAVAILABLE)
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, columnDefinition = "varchar(20) default 'AVAILABLE'")
+    private EProductStatus status = EProductStatus.AVAILABLE;
 
     // Mô tả chi tiết sản phẩm
     @Column(name = "description", columnDefinition = "TEXT")

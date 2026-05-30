@@ -36,25 +36,25 @@ ON DUPLICATE KEY UPDATE
 
 -- Products
 INSERT INTO products (
-  id, name, slug, image_url, price, original_price, percent_discount, stock, description,
+  id, name, slug, image_url, price, original_price, percent_discount, stock, status, description,
   category_id, type_id, brand_id, created_at, updated_at
 ) VALUES
   (1, 'Lofree Flow Lite', 'lofree-flow-lite', 'https://cdn.example.com/product/lofree-flow-lite.png',
-   2590000, 2990000, 13, 20, 'Low profile mechanical keyboard', 2, 1, 1, CURRENT_DATE, CURRENT_DATE),
+   2590000, 2990000, 13, 20, 'AVAILABLE', 'Low profile mechanical keyboard', 2, 1, 1, CURRENT_DATE, CURRENT_DATE),
   (2, 'Evoworks Neo 75', 'evoworks-neo-75', 'https://cdn.example.com/product/evoworks-neo-75.png',
-   3990000, 4390000, 9, 15, '75 percent layout custom keyboard', 1, 1, 2, CURRENT_DATE, CURRENT_DATE),
+   3990000, 4390000, 9, 15, 'AVAILABLE', '75 percent layout custom keyboard', 1, 1, 2, CURRENT_DATE, CURRENT_DATE),
   (3, 'Piifox Aurora Keycap', 'piifox-aurora-keycap', 'https://cdn.example.com/product/piifox-aurora.png',
-   890000, 990000, 10, 50, 'PBT keycap set', 3, 3, 3, CURRENT_DATE, CURRENT_DATE),
+   890000, 990000, 10, 50, 'AVAILABLE', 'PBT keycap set', 3, 3, 3, CURRENT_DATE, CURRENT_DATE),
   (4, 'Gateron Oil King', 'gateron-oil-king', 'https://cdn.example.com/product/gateron-oil-king.png',
-   18000, 22000, 18, 200, 'Linear switch', 3, 2, 2, CURRENT_DATE, CURRENT_DATE),
+   18000, 22000, 18, 200, 'AVAILABLE', 'Linear switch', 3, 2, 2, CURRENT_DATE, CURRENT_DATE),
   (5, 'Lofree Touch Deskmat', 'lofree-touch-deskmat', 'https://cdn.example.com/product/lofree-deskmat.png',
-   490000, 590000, 17, 40, 'Large desk mat', 3, 4, 1, CURRENT_DATE, CURRENT_DATE),
+   490000, 590000, 17, 40, 'AVAILABLE', 'Large desk mat', 3, 4, 1, CURRENT_DATE, CURRENT_DATE),
   (6, 'Evoworks Coiled Cable', 'evoworks-coiled-cable', 'https://cdn.example.com/product/evoworks-cable.png',
-   350000, 420000, 17, 60, 'Type-C coiled cable', 3, 5, 2, CURRENT_DATE, CURRENT_DATE),
+   350000, 420000, 17, 60, 'AVAILABLE', 'Type-C coiled cable', 3, 5, 2, CURRENT_DATE, CURRENT_DATE),
   (7, 'Lofree Block Retro', 'lofree-block-retro', 'https://cdn.example.com/product/lofree-block-retro.png',
-   3290000, 3690000, 11, 12, 'Retro style keyboard', 1, 1, 1, CURRENT_DATE, CURRENT_DATE),
+   3290000, 3690000, 11, 12, 'AVAILABLE', 'Retro style keyboard', 1, 1, 1, CURRENT_DATE, CURRENT_DATE),
   (8, 'Piifox Artisan Set', 'piifox-artisan-set', 'https://cdn.example.com/product/piifox-artisan.png',
-   1290000, 1490000, 13, 25, 'Artisan keycap set', 3, 3, 3, CURRENT_DATE, CURRENT_DATE)
+   1290000, 1490000, 13, 25, 'AVAILABLE', 'Artisan keycap set', 3, 3, 3, CURRENT_DATE, CURRENT_DATE)
 ON DUPLICATE KEY UPDATE
   name = VALUES(name),
   image_url = VALUES(image_url),
@@ -62,6 +62,7 @@ ON DUPLICATE KEY UPDATE
   original_price = VALUES(original_price),
   percent_discount = VALUES(percent_discount),
   stock = VALUES(stock),
+  status = VALUES(status),
   description = VALUES(description),
   category_id = VALUES(category_id),
   type_id = VALUES(type_id),

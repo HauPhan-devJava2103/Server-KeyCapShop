@@ -33,6 +33,7 @@ import com.vn.keycap_server.repository.ProductTypeRepository;
 import com.vn.keycap_server.repository.WishlistRepository;
 import com.vn.keycap_server.repository.specification.ProductSpecification;
 import com.vn.keycap_server.utils.ESortOption;
+import com.vn.keycap_server.utils.EProductStatus;
 import com.vn.keycap_server.repository.BrandRepository;
 import com.vn.keycap_server.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -172,7 +173,7 @@ public class ProductService implements IProductService {
         }
 
         // Truy vấn thông tin chi tiết các sản phẩm dựa trên danh sách ID đã tìm thấy
-        List<Product> products = productRepository.findByIdIn(popularIds);
+        List<Product> products = productRepository.findByIdInAndStatus(popularIds, EProductStatus.AVAILABLE);
 
         // Chuyển đổi danh sách sản phẩm thành Map để tối ưu hóa tốc độ tìm kiếm theo ID
         Map<Long, Product> productMap = products.stream()
@@ -232,7 +233,7 @@ public class ProductService implements IProductService {
 
         // Lấy danh sách sản phẩm thuộc thương hiệu đó
         Pageable pageable = PageRequest.of(0, safeLimit);
-        Page<Product> productPage = productRepository.findByBrandIdIn(topBrandIds, pageable);
+        Page<Product> productPage = productRepository.findByBrandIdInAndStatus(topBrandIds, EProductStatus.AVAILABLE, pageable);
 
         Set<Long> favoriteProductIds = (currentUserId != null && !productPage.getContent().isEmpty())
                 ? new HashSet<>(wishlistRepository.findFavoriteProductIds(currentUserId))
@@ -390,7 +391,7 @@ public class ProductService implements IProductService {
     private Page<Product> getNewlyUpdatedProductsPage(int limit) {
         Pageable pageable = PageRequest.of(0, limit); // Lấy trang đầu tiên với kích thước bằng limit
         LocalDate dateThreshold = LocalDate.now().minusDays(DEFAULT_NEWLY_UPDATED_DAYS); // Ngày cập nhật tối thiểu
-        return productRepository.findByUpdatedAtAfter(dateThreshold, pageable);
+        return productRepository.findByUpdatedAtAfterAndStatus(dateThreshold, EProductStatus.AVAILABLE, pageable);
     }
 
     /**

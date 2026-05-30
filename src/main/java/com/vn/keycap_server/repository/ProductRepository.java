@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import com.vn.keycap_server.modal.Product;
+import com.vn.keycap_server.utils.EProductStatus;
 
 /**
  * ProductRepository quản lý các truy vấn và thao tác dữ liệu trực tiếp
@@ -23,25 +24,26 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     // tạp không cần tạo câu truy vấn riêng trong Repository chỉ kế thừa các method
     // mặc định. Nếu có câu truy vấn đặc biệt khác, ta có thể viết thêm bằng @Query.
 
-    /**
-     * Lấy các sản phẩm mới được cập nhật gần đây.
-     * 
-     * @param date     ngày cập nhật tối thiểu
-     * @param pageable thông tin phân trang
-     * @return Page<Product> danh sách sản phẩm
+    /***
+     * Lấy các sản phẩm mới được cập nhật gần đây và có trạng thái X.  
+     * @param date
+     * @param status
+     * @param pageable
+     * @return
      */
-    Page<Product> findByUpdatedAtAfter(LocalDate date, Pageable pageable);
+    Page<Product> findByUpdatedAtAfterAndStatus(LocalDate date, EProductStatus status, Pageable pageable);
 
     /**
-     * Lấy danh sách sản phẩm theo danh sách ID.
+     * Lấy danh sách sản phẩm theo danh sách ID và trạng thái.
      *
-     * @param ids danh sách ID sản phẩm
+     * @param ids    danh sách ID sản phẩm
+     * @param status trạng thái sản phẩm
      * @return danh sách Product
      */
-    List<Product> findByIdIn(List<Long> ids);
+    List<Product> findByIdInAndStatus(List<Long> ids, EProductStatus status);
 
     /**
-     * Lấy danh sách sản phẩm thuộc một danh sách thương hiệu.
+     * Lấy danh sách sản phẩm thuộc một danh sách thương hiệu và có trạng thái X.
      */
-    Page<Product> findByBrandIdIn(List<Long> brandIds, Pageable pageable);
+    Page<Product> findByBrandIdInAndStatus(List<Long> brandIds, EProductStatus status, Pageable pageable);
 }

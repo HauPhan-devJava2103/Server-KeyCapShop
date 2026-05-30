@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -23,6 +24,37 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
      * Dùng cho logic upsert (cộng dồn nếu đã tồn tại).
      */
     Optional<CartItem> findByUserIdAndProductId(Long userId, Long productId);
+
+    /**
+     * Thêm mới hoặc cập nhật CartItem nếu sản phẩm còn hàng và số lượng hợp lệ.
+     * @param userId
+     * @param productId
+     * @param quantity
+     * @param maxQuantity
+     * @return
+     */
+    @Modifying
+    @Query(value = """
+            INSERT INTO cart_items (user_id, product_id, quantity, created_at, updated_at)
+            SELECT :userId, :productId, :quantity, CURRENT_DATE, CURRENT_DATE
+            FROM products p
+            WHERE p.id = :productId
+              AND p.status = 'AVAILABLE'
+              AND p.stock > 0
+              AND :quantity <= p.stock
+              AND :quantity <= :maxQuantity
+            ON DUPLICATE KEY UPDATE
+              quantity = IF(
+                  quantity + VALUES(quantity) <= (SELECT p2.stock FROM products p2 WHERE p2.id = :productId)
+                  AND quantity + VALUES(quantity) <= :maxQuantity,
+                  quantity + VALUES(quantity),
+                  quantity
+              )
+            """, nativeQuery = true)
+    int upsertCartItemIfWithinStock(@Param("userId") Long userId,
+            @Param("productId") Long productId,
+            @Param("quantity") int quantity,
+            @Param("maxQuantity") int maxQuantity);
 
     /**
      * Đếm tổng số lượng (quantity) tất cả sản phẩm trong giỏ hàng của một user.
