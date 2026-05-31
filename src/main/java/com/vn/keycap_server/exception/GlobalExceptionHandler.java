@@ -79,6 +79,16 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
+    // Lỗi 401: Chưa xác thực hoặc token không hợp lệ
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiResponse> handleUnauthorized(UnauthorizedException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.builder()
+                        .success(false)
+                        .message(e.getMessage())
+                        .build());
+    }
+
     // Lỗi 500: Bắt tất cả lỗi chưa được xử lý
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse> handleGenericException(Exception e) {

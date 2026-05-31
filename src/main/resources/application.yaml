@@ -1,6 +1,55 @@
+server:
+  port: 3000
+
 spring:
   application:
     name: keycap_server
+  datasource:
+    url: "jdbc:mysql://localhost:3306/keycap_server?createDatabaseIfNotExist=true"
+    driverClassName: "com.mysql.cj.jdbc.Driver"
+    username: root
+    password: ${DB_PASSWORD}
 
+  # Redis Config
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
+  # Mail Config (Gmail SMTP)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+
+jwt:
+  signerKey: ${JWT_SIGNER_KEY}
+
+google:
+  oauth2:
+    project-id: ${GOOGLE_PROJECT_ID}
+    auth-url: ${GOOGLE_AUTH_URL}
+    token-uri: ${GOOGLE_TOKEN_URI}
+    auth-provider-x509-cert-url: ${GOOGLE_AUTH_PROVIDER_CERT_URL}
+    javascript-origins: ${GOOGLE_JAVASCRIPT_ORIGINS}

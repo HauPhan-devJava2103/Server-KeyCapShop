@@ -1,6 +1,6 @@
 package com.vn.keycap_server.modal;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -24,7 +24,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "invalidated_tokens")
-public class InvalidatedToken extends AbstractEntity {
+public class UserToken extends AbstractEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -38,5 +38,5 @@ public class InvalidatedToken extends AbstractEntity {
     private boolean isRevoked = false;
 
     @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    private Date expiresAt;
 }
