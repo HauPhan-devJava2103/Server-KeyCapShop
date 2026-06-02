@@ -1,5 +1,7 @@
 package com.vn.keycap_server.dto.response.product;
 
+import java.math.BigDecimal;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
@@ -29,18 +31,11 @@ public class ProductCardResponse {
     // Loại sản phẩm (ví dụ: Linear, Tactile, Clicky)
     private String typeName;
 
-    // Giá hiện tại (sau giảm giá)
-    private long price;
-
-    // Giá gốc (chưa giảm giá)
-    private long originalPrice;
-
-    // Phần trăm giảm giá (ví dụ: 10, 20)
-    private int percentDiscount;
-
     // Trạng thái yêu thích của user hiện tại
     @JsonProperty("isFavorite") // Đổi tên trường thành "isFavorite" trong JSON
     private boolean isFavorite;
+    // Giá thấp nhất trong các biến thể của sản phẩm, được sử dụng để hiển thị giá trên thẻ sản phẩm
+    private BigDecimal minPrice;
 
     // Đường dẫn slug thân thiện với SEO
     private String slug;

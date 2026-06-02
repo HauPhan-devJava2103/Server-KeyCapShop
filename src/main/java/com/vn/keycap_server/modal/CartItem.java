@@ -1,24 +1,14 @@
 package com.vn.keycap_server.modal;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 /**
  * CartItem là Entity đại diện cho bảng 'cart_items' trong database.
  * Lưu thông tin sản phẩm đã được thêm vào giỏ hàng của một người dùng,
  * bao gồm số lượng mong muốn.
- * Ràng buộc: Mỗi cặp (user_id, product_id) là duy nhất,
- * tức mỗi user chỉ có tối đa 1 dòng cho mỗi sản phẩm trong giỏ.
+ * Ràng buộc: Mỗi cặp (user_id, variant_id) là duy nhất,
+ * tức mỗi user chỉ có tối đa 1 dòng cho mỗi biến thể sản phẩm trong giỏ.
  */
 @Getter
 @Setter
@@ -27,7 +17,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "cart_items", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "user_id", "product_id" }, name = "uk_user_product_cart")
+        @UniqueConstraint(columnNames = { "user_id", "variant_id" }, name = "uk_user_variant_cart")
 })
 public class CartItem extends AbstractEntity {
 
@@ -38,8 +28,8 @@ public class CartItem extends AbstractEntity {
 
     // Sản phẩm được thêm vào giỏ
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    @JoinColumn(name = "variant_id", nullable = false)
+    private ProductVariant variant;
 
     // Số lượng sản phẩm trong giỏ
     @Column(name = "quantity", nullable = false)
