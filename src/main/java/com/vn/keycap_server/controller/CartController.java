@@ -69,15 +69,15 @@ public class CartController {
     }
 
     /**
-     * DELETE /cart/items/{productId}
+     * DELETE /cart/items/{variantId}
      * Cập nhật URL pattern để hứng Path Variable
      */
-    @DeleteMapping("/items/{productId}")
-    public ResponseEntity<ApiResponse> deleteCartItem(@PathVariable Long productId) {
+    @DeleteMapping("/items/{variantId}")
+    public ResponseEntity<ApiResponse> deleteCartItem(@PathVariable Long variantId) {
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Xóa khỏi giỏ hàng thành công")
-                .data(cartService.deleteCartItem(productId))
+                .data(cartService.deleteCartItem(variantId))
                 .build());
     }
 }

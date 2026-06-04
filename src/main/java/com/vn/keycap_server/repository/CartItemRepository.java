@@ -19,57 +19,63 @@ import com.vn.keycap_server.modal.CartItem;
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
-    /**
-     * Tìm một CartItem theo userId và productId.
-     * Dùng cho logic upsert (cộng dồn nếu đã tồn tại).
-     */
-    Optional<CartItem> findByUserIdAndProductId(Long userId, Long productId);
+  /**
+   * Tìm một CartItem theo userId và productId.
+   * Dùng cho logic upsert (cộng dồn nếu đã tồn tại).
+   */
+  Optional<CartItem> findByUserIdAndVariantId(Long userId, Long variantId);
 
-    /**
-     * Thêm mới hoặc cập nhật CartItem nếu sản phẩm còn hàng và số lượng hợp lệ.
-     * @param userId
-     * @param productId
-     * @param quantity
-     * @param maxQuantity
-     * @return
-     */
-    @Modifying
-    @Query(value = """
-            INSERT INTO cart_items (user_id, product_id, quantity, created_at, updated_at)
-            SELECT :userId, :productId, :quantity, CURRENT_DATE, CURRENT_DATE
-            FROM products p
-            WHERE p.id = :productId
-              AND p.status = 'AVAILABLE'
-              AND p.stock > 0
-              AND :quantity <= p.stock
-              AND :quantity <= :maxQuantity
-            ON DUPLICATE KEY UPDATE
-              quantity = IF(
-                  quantity + VALUES(quantity) <= (SELECT p2.stock FROM products p2 WHERE p2.id = :productId)
-                  AND quantity + VALUES(quantity) <= :maxQuantity,
-                  quantity + VALUES(quantity),
-                  quantity
-              )
-            """, nativeQuery = true)
-    int upsertCartItemIfWithinStock(@Param("userId") Long userId,
-            @Param("productId") Long productId,
-            @Param("quantity") int quantity,
-            @Param("maxQuantity") int maxQuantity);
+  /**
+   * Thêm mới hoặc cập nhật CartItem nếu sản phẩm còn hàng và số lượng hợp lệ.
+   * 
+   * @param userId
+   * @param variantId
+   * @param quantity
+   * @param maxQuantity
+   * @return
+   */
+  @Modifying
+  @Query(value = """
+      INSERT INTO cart_items (user_id, variant_id, quantity, created_at, updated_at)
+      SELECT :userId, pv.id, :quantity, CURRENT_DATE, CURRENT_DATE
+      FROM product_variants pv
+      JOIN products p ON p.id = pv.product_id
+      WHERE pv.id = :variantId
+        AND p.status = 'AVAILABLE'
+        AND pv.stock_quantity > 0
+        AND :quantity <= pv.stock_quantity
+        AND :quantity <= :maxQuantity
+      ON DUPLICATE KEY UPDATE
+        quantity = IF(
+            quantity + VALUES(quantity) <= (
+                SELECT pv2.stock_quantity
+                FROM product_variants pv2
+                WHERE pv2.id = :variantId
+            )
+            AND quantity + VALUES(quantity) <= :maxQuantity,
+            quantity + VALUES(quantity),
+            quantity
+        )
+      """, nativeQuery = true)
+  int upsertCartItemIfWithinStock(@Param("userId") Long userId,
+      @Param("variantId") Long variantId,
+      @Param("quantity") int quantity,
+      @Param("maxQuantity") int maxQuantity);
 
-    /**
-     * Đếm tổng số lượng (quantity) tất cả sản phẩm trong giỏ hàng của một user.
-     * Trả về 0 nếu giỏ hàng trống.
-     */
-    @Query("SELECT COALESCE(SUM(c.quantity), 0) FROM CartItem c WHERE c.user.id = :userId")
-    int sumQuantityByUserId(@Param("userId") Long userId);
+  /**
+   * Đếm tổng số lượng (quantity) tất cả sản phẩm trong giỏ hàng của một user.
+   * Trả về 0 nếu giỏ hàng trống.
+   */
+  @Query("SELECT COALESCE(SUM(c.quantity), 0) FROM CartItem c WHERE c.user.id = :userId")
+  int sumQuantityByUserId(@Param("userId") Long userId);
 
-    /**
-     * Lấy toàn bộ CartItem trong giỏ hàng của một user.
-     */
-    List<CartItem> findByUserId(Long userId);
+  /**
+   * Lấy toàn bộ CartItem trong giỏ hàng của một user.
+   */
+  List<CartItem> findByUserId(Long userId);
 
-    /**
-     * Xóa CartItem theo userId và productId.
-     */
-    void deleteByUserIdAndProductId(Long userId, Long productId);
+  /**
+   * Xóa CartItem theo userId và variantId.
+   */
+  void deleteByUserIdAndVariantId(Long userId, Long variantId);
 }

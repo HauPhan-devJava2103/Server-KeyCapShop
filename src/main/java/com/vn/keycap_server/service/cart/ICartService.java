@@ -30,5 +30,5 @@ public interface ICartService {
     /**
      * Xóa một sản phẩm khỏi giỏ hàng.
      */
-    CartCountResponse deleteCartItem(Long productId);
+    CartCountResponse deleteCartItem(Long variantId);
 }

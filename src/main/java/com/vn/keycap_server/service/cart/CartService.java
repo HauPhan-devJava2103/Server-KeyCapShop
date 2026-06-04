@@ -16,9 +16,9 @@ import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.exception.ResourceNotFoundException;
 import com.vn.keycap_server.exception.UnauthorizedException;
 import com.vn.keycap_server.modal.CartItem;
-import com.vn.keycap_server.modal.Product;
+import com.vn.keycap_server.modal.ProductVariant;
 import com.vn.keycap_server.repository.CartItemRepository;
-import com.vn.keycap_server.repository.ProductRepository;
+import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.utils.EProductStatus;
 
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ public class CartService implements ICartService {
     private static final int MAX_QUANTITY_PER_CART_ITEM = 100;
 
     private final CartItemRepository cartItemRepository;
-    private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
 
     /**
      * Lấy thông tin tóm tắt về số lượng sản phẩm hiện có trong giỏ hàng của người
@@ -60,32 +60,36 @@ public class CartService implements ICartService {
     public CartCountResponse addToCart(CartItemRequest request) {
         Long userId = getCurrentUserId();
 
-        // Kiểm tra sản phẩm có tồn tại không
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
+        // Kiểm tra biến thể sản phẩm có tồn tại không
+        ProductVariant variant = productVariantRepository.findById(request.getVariantId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể sản phẩm"));
 
-        // Kiểm tra sản phẩm có thể thêm vào giỏ hàng không (trạng thái, tồn kho)
-        validateProductCanBeAddedToCart(product, request.getQuantity());
+        // Kiểm tra biến thể sản phẩm có thể thêm vào giỏ hàng không (trạng thái, tồn
+        // kho)
+        validateVariantCanBeAddedToCart(variant, request.getQuantity());
 
-        // Thực hiện upsert: nếu sản phẩm đã có trong giỏ thì cập nhật số lượng, nếu chưa có thì thêm mới
+        //// Thực hiện upsert: nếu biến thể sản phẩm đã có trong giỏ thì cập nhật số
+        //// lượng, nếu chưa có thì thêm mới
         int changedRows = cartItemRepository.upsertCartItemIfWithinStock(
                 userId,
-                request.getProductId(),
+                request.getVariantId(),
                 request.getQuantity(),
                 MAX_QUANTITY_PER_CART_ITEM);
-        // Nếu không có hàng nào bị cập nhật, có thể do vượt quá số lượng tồn kho hoặc giới hạn tối đa, cần kiểm tra lại
+        // Nếu không có hàng nào bị cập nhật, có thể do vượt quá số lượng tồn kho hoặc
+        // giới hạn tối đa, cần kiểm tra lại
         if (changedRows == 0) {
-            cartItemRepository.findByUserIdAndProductId(userId, request.getProductId())
-                    .ifPresent(item -> validateCartItemQuantity(item.getQuantity() + request.getQuantity(),
-                            product.getStock()));
-            throw new BadRequestException("Số lượng sản phẩm trong kho không đủ");
+            cartItemRepository.findByUserIdAndVariantId(userId, request.getVariantId())
+                    .ifPresent(item -> validateCartItemQuantity(
+                            item.getQuantity() + request.getQuantity(),
+                            variant.getStockQuantity()));
+            throw new BadRequestException("Số lượng biến thể sản phẩm trong kho không đủ");
         }
 
         int newCount = cartItemRepository.sumQuantityByUserId(userId);
         return CartCountResponse.builder().newCartCount(newCount).build();
     }
 
-        /**
+    /**
      * Cập nhật số lượng hàng loạt cho các sản phẩm hiện có trong giỏ hàng của người
      * dùng.
      * * @param requests danh sách các yêu cầu thay đổi số lượng kèm ID sản phẩm
@@ -105,14 +109,14 @@ public class CartService implements ICartService {
 
         // Lấy toàn bộ giỏ hàng hiện tại của user để xử lý batch in memory
         List<CartItem> currentItems = cartItemRepository.findByUserId(userId);
-        Map<Long, CartItem> itemMap = currentItems.stream()
-                .collect(Collectors.toMap(item -> item.getProduct().getId(), item -> item));
+        Map<Long, CartItem> itemByVariantId = currentItems.stream()
+                .collect(Collectors.toMap(item -> item.getVariant().getId(), item -> item));
 
-        for (CartItemRequest req : requests) {
-            CartItem item = itemMap.get(req.getProductId());
+        for (CartItemRequest request : requests) {
+            CartItem item = itemByVariantId.get(request.getVariantId());
             if (item != null) {
-                item.setQuantity(req.getQuantity());
-                // Hibernate sẽ tự dirty check và update khi transaction commit
+                validateVariantCanBeAddedToCart(item.getVariant(), request.getQuantity());
+                item.setQuantity(request.getQuantity());
             }
         }
 
@@ -128,9 +132,9 @@ public class CartService implements ICartService {
      */
     @Override
     @Transactional
-    public CartCountResponse deleteCartItem(Long productId) {
+    public CartCountResponse deleteCartItem(Long variantId) {
         Long userId = getCurrentUserId();
-        cartItemRepository.deleteByUserIdAndProductId(userId, productId);
+        cartItemRepository.deleteByUserIdAndVariantId(userId, variantId);
         int newCount = cartItemRepository.sumQuantityByUserId(userId);
         return CartCountResponse.builder().newCartCount(newCount).build();
     }
@@ -161,14 +165,16 @@ public class CartService implements ICartService {
         throw new UnauthorizedException("Vui lòng đăng nhập để sử dụng tính năng này");
     }
 
-    private void validateProductCanBeAddedToCart(Product product, int requestedQuantity) {
-        if (product.getStatus() == EProductStatus.UNAVAILABLE) {
-            throw new BadRequestException("Sản phẩm hiện không còn được bán");
+    // kiểm tra variant
+    private void validateVariantCanBeAddedToCart(ProductVariant variant, int requestedQuantity) {
+        if (variant.getProduct().getStatus() == EProductStatus.UNAVAILABLE) {
+            throw new BadRequestException("Biến thể sản phẩm hiện không còn được bán");
         }
-        if (product.getStock() == null || product.getStock() <= 0) {
-            throw new BadRequestException("Sản phẩm đã hết hàng");
+        Integer stockQuantity = variant.getStockQuantity();
+        if (stockQuantity == null || stockQuantity <= 0) {
+            throw new BadRequestException("Biến thể sản phẩm đã hết hàng");
         }
-        validateCartItemQuantity(requestedQuantity, product.getStock());
+        validateCartItemQuantity(requestedQuantity, stockQuantity);
     }
 
     private void validateCartItemQuantity(int quantity, int stock) {
@@ -177,7 +183,7 @@ public class CartService implements ICartService {
                     "Số lượng mỗi sản phẩm trong giỏ hàng không được vượt quá " + MAX_QUANTITY_PER_CART_ITEM);
         }
         if (quantity > stock) {
-            throw new BadRequestException("Số lượng sản phẩm trong kho không đủ");
+            throw new BadRequestException("So luong san pham trong kho khong du");
         }
     }
 }
