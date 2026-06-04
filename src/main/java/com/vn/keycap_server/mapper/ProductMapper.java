@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 
 import com.vn.keycap_server.dto.response.product.ProductCardResponse;
 import com.vn.keycap_server.modal.Product;
+import com.vn.keycap_server.modal.ProductImage;
+import com.vn.keycap_server.modal.ProductVariant;
 
 /**
  * ProductMapper sử dụng thư viện MapStruct để tự động chuyển đổi

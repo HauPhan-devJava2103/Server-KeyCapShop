@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -75,13 +76,15 @@ public class ProductService implements IProductService {
         Long currentUserId = getCurrentUserId();
 
         ESortOption sortOption = ESortOption.fromString(safeRequest.getSort());
+        //
+        Sort springSort = isPriceSort(sortOption) ? Sort.unsorted() : sortOption.toSpringSort();
         Pageable pageable = PageRequest.of(
                 safeRequest.getPage() - 1, // PageRequest sử dụng index bắt đầu từ 0, nên trừ đi 1
                 safeRequest.getPageSize(), // Kích thước trang
-                sortOption.toSpringSort()); // Chuyển đổi ESortOption thành Sort của Spring Data JPA
+                springSort); // Chuyển đổi ESortOption thành Sort của Spring Data JPA
 
         // Tạo Specification động dựa trên các tiêu chí lọc trong request
-        Specification<Product> specification = ProductSpecification.filterProducts(safeRequest);
+        Specification<Product> specification = ProductSpecification.filterProducts(safeRequest, sortOption);
         Page<Product> productPage = productRepository.findAll(specification, pageable);
 
         // Lấy danh sách ID sản phẩm yêu thích của user từ database chỉ một lần duy nhất
@@ -233,7 +236,8 @@ public class ProductService implements IProductService {
 
         // Lấy danh sách sản phẩm thuộc thương hiệu đó
         Pageable pageable = PageRequest.of(0, safeLimit);
-        Page<Product> productPage = productRepository.findByBrandIdInAndStatus(topBrandIds, EProductStatus.AVAILABLE, pageable);
+        Page<Product> productPage = productRepository.findByBrandIdInAndStatus(topBrandIds, EProductStatus.AVAILABLE,
+                pageable);
 
         Set<Long> favoriteProductIds = (currentUserId != null && !productPage.getContent().isEmpty())
                 ? new HashSet<>(wishlistRepository.findFavoriteProductIds(currentUserId))
@@ -263,14 +267,19 @@ public class ProductService implements IProductService {
     @Override
     @Transactional(readOnly = true)
     public Page<ProductCardResponse> getRecommendProducts(ListRecommendProductRequest request) {
+        ListRecommendProductRequest safeRequest = (request != null) ? request : new ListRecommendProductRequest();
         // Chuẩn hóa số lượng phần tử cần lấy để tránh giá trị âm hoặc quá lớn
-        int safeSize = normalizeLimit(request.getLimit(), DEFAULT_RECOMMEND_LIMIT);
+        int safeSize = normalizeLimit(safeRequest.getLimit(), DEFAULT_RECOMMEND_LIMIT);
         // Lấy ID của người dùng hiện tại từ hệ thống để kiểm tra trạng thái yêu thích
         Long currentUserId = getCurrentUserId();
+        ESortOption sortOption = ESortOption.fromString(safeRequest.getSort());
+        Sort springSort = (sortOption == ESortOption.PRICE_ASC || sortOption == ESortOption.PRICE_DESC)
+                ? Sort.unsorted()
+                : sortOption.toSpringSort();
         // Tạo đối tượng Pageable với trang đầu tiên và kích thước safeSize
-        Pageable pageable = PageRequest.of(0, safeSize);
-        // Tạo Specification động dựa trên các tiêu chí lọc trong request
-        Specification<Product> specification = ProductSpecification.filterRecommendProducts(request);
+        Pageable pageable = PageRequest.of(0, safeSize, springSort);
+
+        Specification<Product> specification = ProductSpecification.filterRecommendProducts(safeRequest, sortOption);
         // Truy vấn database để lấy danh sách sản phẩm phù hợp với tiêu chí đề xuất
         Page<Product> productPage = productRepository.findAll(specification, pageable);
         // Lấy danh sách ID sản phẩm yêu thích của user từ database chỉ một lần duy nhất
@@ -391,7 +400,8 @@ public class ProductService implements IProductService {
     private Page<Product> getNewlyUpdatedProductsPage(int limit) {
         Pageable pageable = PageRequest.of(0, limit); // Lấy trang đầu tiên với kích thước bằng limit
         LocalDate dateThreshold = LocalDate.now().minusDays(DEFAULT_NEWLY_UPDATED_DAYS); // Ngày cập nhật tối thiểu
-        return productRepository.findByUpdatedAtAfterAndStatus(dateThreshold, EProductStatus.AVAILABLE, pageable);
+        return productRepository.findByUpdatedAtAfterAndStatusAndInStock(dateThreshold, EProductStatus.AVAILABLE,
+                pageable);
     }
 
     /**
@@ -407,5 +417,9 @@ public class ProductService implements IProductService {
         if (limit <= 0)
             return defaultLimit; // Sử dụng giá trị mặc định nếu limit không hợp lệ
         return Math.min(limit, 100); // Giới hạn tối đa để tránh truy vấn quá nhiều dữ liệu
+    }
+
+    private boolean isPriceSort(ESortOption sortOption) {
+        return sortOption == ESortOption.PRICE_ASC || sortOption == ESortOption.PRICE_DESC;
     }
 }
