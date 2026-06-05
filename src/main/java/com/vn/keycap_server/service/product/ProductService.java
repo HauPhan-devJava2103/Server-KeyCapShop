@@ -34,18 +34,21 @@ import com.vn.keycap_server.modal.Product;
 import com.vn.keycap_server.modal.ProductImage;
 import com.vn.keycap_server.modal.ProductVariant;
 import com.vn.keycap_server.modal.ProductVariantAttribute;
+import com.vn.keycap_server.repository.BrandRepository;
+import com.vn.keycap_server.repository.CategoryRepository;
 import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.ProductRepository;
 import com.vn.keycap_server.repository.ProductTypeRepository;
 import com.vn.keycap_server.repository.WishlistRepository;
 import com.vn.keycap_server.repository.ReviewRepository;
 import com.vn.keycap_server.repository.specification.ProductSpecification;
-import com.vn.keycap_server.utils.ESortOption;
 import com.vn.keycap_server.utils.EProductStatus;
 import com.vn.keycap_server.repository.BrandRepository;
 import com.vn.keycap_server.repository.CategoryRepository;
 import java.math.BigDecimal;
 import java.util.Collections;
+import com.vn.keycap_server.utils.ESortOption;
+
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -180,7 +183,6 @@ public class ProductService implements IProductService {
                 return response;
         }
 
-        /**
          * Lấy danh sách sản phẩm dạng card theo tiêu chí lọc và phân trang.
          *
          * @param request DTO lọc sản phẩm từ client
@@ -256,6 +258,8 @@ public class ProductService implements IProductService {
                 List<ProductCardResponse> productCards = productPage.getContent().stream()
                                 .map(product -> {
                                         ProductCardResponse card = productMapper.productToProductCardResponse(product);
+                                        // Nếu user chưa auth --> isFavorite = false
+                                        // Nếu user đã auth --> check trong danh sách favorite đã query một lần
                                         boolean isFavorite = currentUserId != null
                                                         && favoriteProductIds.contains(product.getId());
                                         card.setFavorite(isFavorite);

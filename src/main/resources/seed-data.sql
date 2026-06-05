@@ -1,6 +1,31 @@
 -- Seed data for KeyCapShop (excluding users, assuming user_id = 1 exists)
 -- Run with: mysql -u <user> -p <database> < seed-data.sql
 
+-- ==========================================
+-- XÓA DỮ LIỆU CŨ (DELETE - giữ cấu trúc bảng, chỉ xóa data)
+-- Tắt kiểm tra FK tạm thời để tránh lỗi phụ thuộc
+-- ==========================================
+SET FOREIGN_KEY_CHECKS = 0;
+
+DELETE FROM order_items;
+DELETE FROM cart_items;
+DELETE FROM wishlists;
+DELETE FROM product_variant_attributes;
+DELETE FROM product_variants;
+DELETE FROM product_specifications;
+DELETE FROM product_images;
+DELETE FROM products;
+DELETE FROM product_types;
+DELETE FROM brands;
+DELETE FROM categories;
+-- KHÔNG xóa invalidated_tokens vì sẽ làm mất hiệu lực tất cả JWT token đang dùng
+-- DELETE FROM invalidated_tokens;
+DELETE FROM orders;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+
+
 -- ================== CATEGORIES ==================
 INSERT INTO categories (id, name, slug, description, created_at, updated_at) VALUES
   (1, 'Bàn phím cơ', 'ban-phim-co', 'Các loại bàn phím cơ Custom và Pre-build', CURRENT_DATE, CURRENT_DATE),

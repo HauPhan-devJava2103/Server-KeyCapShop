@@ -1,11 +1,14 @@
 package com.vn.keycap_server.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.vn.keycap_server.modal.Wishlist;
 
@@ -24,4 +27,14 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
      */
     @Query("select w.product.id from Wishlist w where w.user.id = :userId")
     List<Long> findFavoriteProductIds(@Param("userId") Long userId);
+
+    // Find Wishlist by productId and userId
+    @Query("select w from Wishlist w where w.product.id = :productId and w.user.id = :userId")
+    Optional<Wishlist> findByProductIdAndUserId(@Param("productId") Long productId, @Param("userId") Long userId);
+
+    // Delete Wishlist by productId and userId
+    @Modifying
+    @Transactional
+    @Query("delete from Wishlist w where w.product.id = :productId and w.user.id = :userId")
+    void deleteByProductIdAndUserId(@Param("productId") Long productId, @Param("userId") Long userId);
 }
