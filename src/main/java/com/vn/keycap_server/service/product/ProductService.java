@@ -25,17 +25,28 @@ import com.vn.keycap_server.dto.request.product.ListRecommendProductRequest;
 import com.vn.keycap_server.dto.response.product.FilterItemResponse;
 import com.vn.keycap_server.dto.response.product.FilterModelResponse;
 import com.vn.keycap_server.dto.response.product.ProductCardResponse;
+import com.vn.keycap_server.dto.response.product.ProductDetailResponse;
+import com.vn.keycap_server.dto.response.product.ProductOptionResponse;
 import com.vn.keycap_server.exception.BadRequestException;
+import com.vn.keycap_server.exception.ResourceNotFoundException;
 import com.vn.keycap_server.mapper.ProductMapper;
 import com.vn.keycap_server.modal.Product;
+import com.vn.keycap_server.modal.ProductImage;
+import com.vn.keycap_server.modal.ProductVariant;
+import com.vn.keycap_server.modal.ProductVariantAttribute;
 import com.vn.keycap_server.repository.BrandRepository;
 import com.vn.keycap_server.repository.CategoryRepository;
 import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.ProductRepository;
 import com.vn.keycap_server.repository.ProductTypeRepository;
 import com.vn.keycap_server.repository.WishlistRepository;
+import com.vn.keycap_server.repository.ReviewRepository;
 import com.vn.keycap_server.repository.specification.ProductSpecification;
 import com.vn.keycap_server.utils.EProductStatus;
+import com.vn.keycap_server.repository.BrandRepository;
+import com.vn.keycap_server.repository.CategoryRepository;
+import java.math.BigDecimal;
+import java.util.Collections;
 import com.vn.keycap_server.utils.ESortOption;
 
 import lombok.RequiredArgsConstructor;
@@ -55,12 +66,123 @@ public class ProductService implements IProductService {
         private final CategoryRepository categoryRepository;
         private final ProductTypeRepository typeRepository;
         private final BrandRepository brandRepository;
+        private final ReviewRepository reviewRepository;
 
         // =================================================
         // Triển khai các phương thức trong IProductService
         // =================================================
 
         /**
+         * Lấy thông tin chi tiết của sản phẩm theo slug.
+         *
+         * @param slug của sản phẩm
+         * @return ProductDetailResponse chi tiết sản phẩm
+         */
+        @Override
+        @Transactional(readOnly = true)
+        public ProductDetailResponse getProductBySlug(String slug) {
+                // BƯỚC 1: Lấy Product từ Database (đã eager load category, brand, type nhờ
+                // @EntityGraph)
+                Product product = productRepository.findBySlug(slug)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Không tìm thấy sản phẩm với slug: " + slug));
+
+                // BƯỚC 2: Chạy Mapper để ánh xạ các trường cơ bản sang DTO
+                ProductDetailResponse response = productMapper.toProductDetailResponse(product);
+
+                // BƯỚC 3: Tự tính toán dựa trên dữ liệu sẵn có (Không gọi thêm DB)
+                List<ProductVariant> variants = product.getVariants() != null ? product.getVariants()
+                                : Collections.emptyList();
+
+                // 3.1. Tính minPrice & maxPrice
+                BigDecimal minPrice = variants.stream()
+                                .map(ProductVariant::getPrice)
+                                .filter(Objects::nonNull)
+                                .min(BigDecimal::compareTo)
+                                .orElse(BigDecimal.ZERO);
+
+                BigDecimal maxPrice = variants.stream()
+                                .map(ProductVariant::getPrice)
+                                .filter(Objects::nonNull)
+                                .max(BigDecimal::compareTo)
+                                .orElse(BigDecimal.ZERO);
+
+                response.setMinPrice(minPrice);
+                response.setMaxPrice(maxPrice);
+
+                // 3.2. Tính tổng số lượng tồn kho
+                int totalStock = variants.stream()
+                                .map(ProductVariant::getStockQuantity)
+                                .filter(Objects::nonNull)
+                                .mapToInt(Integer::intValue)
+                                .sum();
+                response.setTotalStockQuantity(totalStock);
+
+                // 3.3. Lấy mảng thumbnailUrl (Ảnh phụ)
+                String[] thumbnails = product.getImages() != null ? product.getImages().stream()
+                                .map(ProductImage::getUrl)
+                                .toArray(String[]::new) : new String[0];
+                response.setThumbnailUrl(thumbnails);
+
+                // 3.4. Gom nhóm thuộc tính để tạo danh sách options (Màu sắc, Switch...)
+                List<ProductOptionResponse> options = variants.stream()
+                                .filter(v -> v.getAttributes() != null)
+                                .flatMap(v -> v.getAttributes().stream())
+                                .collect(Collectors.groupingBy(
+                                                ProductVariantAttribute::getName,
+                                                Collectors.mapping(ProductVariantAttribute::getValue,
+                                                                Collectors.toSet())))
+                                .entrySet().stream()
+                                .map(entry -> ProductOptionResponse.builder()
+                                                .name(entry.getKey())
+                                                .values(entry.getValue().toArray(new String[0]))
+                                                .build())
+                                .collect(Collectors.toList());
+                response.setOptions(options);
+
+                // BƯỚC 4: Truy vấn cơ sở dữ liệu bổ sung
+                Long currentUserId = getCurrentUserId();
+
+                // 4.1. Kiểm tra sản phẩm yêu thích (isFavorite)
+                boolean isFavorite = false;
+                Set<Long> favoriteProductIds = new HashSet<>();
+                if (currentUserId != null) {
+                        favoriteProductIds.addAll(wishlistRepository.findFavoriteProductIds(currentUserId));
+                        isFavorite = favoriteProductIds.contains(product.getId());
+                }
+                response.setFavorite(isFavorite);
+
+                // 4.2. Tính toán số sao trung bình (rating)
+                Double avgRating = reviewRepository.getAverageRatingByProductId(product.getId());
+                int rating = avgRating != null ? (int) Math.round(avgRating) : 5; // mặc định 5 sao nếu chưa có đánh giá
+                response.setRating(rating);
+
+                // 4.3. Truy vấn các sản phẩm liên quan (relateTo)
+                Long categoryId = product.getCategory() != null ? product.getCategory().getId() : null;
+                Long typeId = product.getType() != null ? product.getType().getId() : null;
+
+                List<Product> relatedProducts = productRepository.findRelatedProducts(
+                                categoryId,
+                                typeId,
+                                product.getId(),
+                                EProductStatus.AVAILABLE,
+                                PageRequest.of(0, 10) // Lấy tối đa 10 sản phẩm liên quan
+                );
+
+                List<ProductCardResponse> relateToResponses = relatedProducts.stream()
+                                .map(p -> {
+                                        ProductCardResponse card = productMapper.productToProductCardResponse(p);
+                                        // Thiết lập trạng thái yêu thích cho sản phẩm liên quan nếu có đăng nhập
+                                        card.setFavorite(currentUserId != null
+                                                        && favoriteProductIds.contains(p.getId()));
+                                        return card;
+                                })
+                                .collect(Collectors.toList());
+                response.setRelateTo(relateToResponses);
+
+                return response;
+        }
+
          * Lấy danh sách sản phẩm dạng card theo tiêu chí lọc và phân trang.
          *
          * @param request DTO lọc sản phẩm từ client
@@ -136,6 +258,8 @@ public class ProductService implements IProductService {
                 List<ProductCardResponse> productCards = productPage.getContent().stream()
                                 .map(product -> {
                                         ProductCardResponse card = productMapper.productToProductCardResponse(product);
+                                        // Nếu user chưa auth --> isFavorite = false
+                                        // Nếu user đã auth --> check trong danh sách favorite đã query một lần
                                         boolean isFavorite = currentUserId != null
                                                         && favoriteProductIds.contains(product.getId());
                                         card.setFavorite(isFavorite);

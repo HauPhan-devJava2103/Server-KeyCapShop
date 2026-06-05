@@ -34,6 +34,7 @@ public class UserToken extends AbstractEntity {
     @Column(name = "refresh_token", columnDefinition = "TEXT", nullable = false)
     private String refreshToken;
 
+    @Builder.Default
     @Column(name = "is_revoked", nullable = false)
     private boolean isRevoked = false;
 
