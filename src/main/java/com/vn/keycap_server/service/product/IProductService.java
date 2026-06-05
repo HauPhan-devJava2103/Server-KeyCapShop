@@ -7,6 +7,8 @@ import com.vn.keycap_server.dto.response.product.ProductCardResponse;
 import com.vn.keycap_server.dto.request.product.ListRecommendProductRequest;
 import com.vn.keycap_server.dto.response.product.FilterModelResponse;
 
+import com.vn.keycap_server.dto.response.product.ProductDetailResponse;
+
 /**
  * IProductService định nghĩa các nghiệp vụ liên quan đến quản lý sản phẩm.
  * Đây là cổng giao tiếp nghiệp vụ chính giữa tầng Controller và tầng Service.
@@ -15,6 +17,14 @@ import com.vn.keycap_server.dto.response.product.FilterModelResponse;
  * KHÔNG biết gì về ApiResponse hay cách đóng gói HTTP response.
  */
 public interface IProductService {
+
+    /**
+     * Lấy chi tiết sản phẩm theo slug.
+     * 
+     * @param slug đường dẫn thân thiện của sản phẩm
+     * @return ProductDetailResponse chứa đầy đủ thông tin sản phẩm
+     */
+    ProductDetailResponse getProductBySlug(String slug);
 
     /**
      * Lấy danh sách sản phẩm có phân trang, tìm kiếm và lọc động.

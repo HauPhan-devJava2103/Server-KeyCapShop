@@ -2,9 +2,11 @@ package com.vn.keycap_server.repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -53,4 +55,22 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
          * Lấy danh sách sản phẩm thuộc một danh sách thương hiệu và có trạng thái X.
          */
         Page<Product> findByBrandIdInAndStatus(List<Long> brandIds, EProductStatus status, Pageable pageable);
+
+        /**
+         * Tìm sản phẩm theo slug và nạp trước category, brand, type để tránh N+1 query.
+         */
+        @EntityGraph(attributePaths = { "category", "brand", "type" })
+        Optional<Product> findBySlug(String slug);
+
+        /**
+         * Tìm sản phẩm liên quan dựa trên category hoặc type, loại trừ sản phẩm hiện tại.
+         */
+        @Query("SELECT p FROM Product p WHERE (:categoryId IS NOT NULL AND p.category.id = :categoryId OR :typeId IS NOT NULL AND p.type.id = :typeId) AND p.id <> :productId AND p.status = :status")
+        List<Product> findRelatedProducts(
+                @Param("categoryId") Long categoryId,
+                @Param("typeId") Long typeId,
+                @Param("productId") Long productId,
+                @Param("status") EProductStatus status,
+                Pageable pageable
+        );
 }

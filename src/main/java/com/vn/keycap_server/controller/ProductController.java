@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -150,6 +151,21 @@ public class ProductController {
                 .success(true)
                 .message("Lấy thông tin bộ lọc thành công")
                 .data(productService.getFilter())
+                .build());
+    }
+
+    /**
+     * API lấy chi tiết sản phẩm
+     * 
+     * @PathVariable productSlug
+     * @return ApiResponse
+     */
+    @GetMapping("/{productSlug}")
+    public ResponseEntity<ApiResponse> getProductBySlug(@PathVariable String productSlug) {
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Lấy chi tiết sản phẩm thành công")
+                .data(productService.getProductBySlug(productSlug))
                 .build());
     }
 }

@@ -33,7 +33,8 @@ public class ProductCardResponse {
 
     // Trạng thái yêu thích của user hiện tại
     @JsonProperty("isFavorite") // Đổi tên trường thành "isFavorite" trong JSON
-    private boolean isFavorite;
+    private boolean favorite;
+
     // Giá thấp nhất trong các biến thể của sản phẩm, được sử dụng để hiển thị giá
     // trên thẻ sản phẩm
     // Phải xủ lý ở Service để tìm ra min giữa các biến thể
