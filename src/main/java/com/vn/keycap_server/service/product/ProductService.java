@@ -1,6 +1,8 @@
 package com.vn.keycap_server.service.product;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,14 +41,10 @@ import com.vn.keycap_server.repository.CategoryRepository;
 import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.ProductRepository;
 import com.vn.keycap_server.repository.ProductTypeRepository;
-import com.vn.keycap_server.repository.WishlistRepository;
 import com.vn.keycap_server.repository.ReviewRepository;
+import com.vn.keycap_server.repository.WishlistRepository;
 import com.vn.keycap_server.repository.specification.ProductSpecification;
 import com.vn.keycap_server.utils.EProductStatus;
-import com.vn.keycap_server.repository.BrandRepository;
-import com.vn.keycap_server.repository.CategoryRepository;
-import java.math.BigDecimal;
-import java.util.Collections;
 import com.vn.keycap_server.utils.ESortOption;
 
 import lombok.RequiredArgsConstructor;
@@ -183,12 +181,14 @@ public class ProductService implements IProductService {
                 return response;
         }
 
+        /**
          * Lấy danh sách sản phẩm dạng card theo tiêu chí lọc và phân trang.
          *
          * @param request DTO lọc sản phẩm từ client
          * @return Page<ProductCardResponse> chứa danh sách sản phẩm và thông tin phân
          *         trang thô
          */
+
         @Override
         @Transactional(readOnly = true)
         public Page<ProductCardResponse> getAllProducts(ListProductRequest request) {
