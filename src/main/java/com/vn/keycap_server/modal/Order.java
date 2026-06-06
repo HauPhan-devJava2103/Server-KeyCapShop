@@ -1,7 +1,14 @@
 package com.vn.keycap_server.modal;
 
+import java.math.BigDecimal;
+
+import com.vn.keycap_server.utils.EOrderStatus;
+import com.vn.keycap_server.utils.EPaymentMethod;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -11,8 +18,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.math.BigDecimal;
 
 /**
  * Order là Entity đại diện cho bảng 'orders' trong database.
@@ -38,8 +43,9 @@ public class Order extends AbstractEntity {
     private BigDecimal totalAmount;
 
     // Trạng thái đơn hàng (ví dụ: PENDING, SHIPPING, DELIVERED, CANCELLED)
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status;
+    private EOrderStatus status;
 
     // Địa chỉ giao hàng của người dùng
     @Column(name = "shipping_address", columnDefinition = "TEXT")
@@ -49,4 +55,10 @@ public class Order extends AbstractEntity {
     @Column(name = "phone_number")
     private String phoneNumber;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method")
+    private EPaymentMethod paymentMethod;
+
+    @Column(name = "transaction_id")
+    private String transactionId;
 }

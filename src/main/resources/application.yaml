@@ -42,6 +42,13 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             redirect-uri: ${GOOGLE_REDIRECT_URI}
+  cloud:
+    openfeign:
+      client:
+        config:
+          momo-client:
+            connect-timeout: 10000
+            read-timeout: 30000
 
 jwt:
   signerKey: ${JWT_SIGNER_KEY}
@@ -53,3 +60,11 @@ google:
     token-uri: ${GOOGLE_TOKEN_URI}
     auth-provider-x509-cert-url: ${GOOGLE_AUTH_PROVIDER_CERT_URL}
     javascript-origins: ${GOOGLE_JAVASCRIPT_ORIGINS}
+
+momo:
+  partner-code: ${MOMO_PARTNER_CODE}
+  access-key: ${MOMO_ACCESS_KEY}
+  secret-key: ${MOMO_SECRET_KEY}
+  api-url: ${MOMO_API_URL}
+  redirect-url: ${MOMO_REDIRECT_URL}
+  ipn-url: ${MOMO_IPN_URL}
