@@ -152,7 +152,7 @@ public class ProductService implements IProductService {
 
                 // 4.2. Tính toán số sao trung bình (rating)
                 Double avgRating = reviewRepository.getAverageRatingByProductId(product.getId());
-                int rating = avgRating != null ? (int) Math.round(avgRating) : 5; // mặc định 5 sao nếu chưa có đánh giá
+                int rating = avgRating != null ? (int) Math.round(avgRating) : 0;
                 response.setRating(rating);
 
                 // 4.3. Truy vấn các sản phẩm liên quan (relateTo)

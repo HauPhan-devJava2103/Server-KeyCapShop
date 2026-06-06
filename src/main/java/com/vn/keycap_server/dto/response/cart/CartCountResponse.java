@@ -1,5 +1,7 @@
 package com.vn.keycap_server.dto.response.cart;
 
+import java.math.BigDecimal;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import lombok.AllArgsConstructor;
@@ -24,4 +26,6 @@ public class CartCountResponse {
     // Tổng số lượng sản phẩm trong giỏ sau khi thao tác (dùng cho
     // POST/PATCH/DELETE)
     private Integer newCartCount;
+
+    private BigDecimal totalPrice;
 }

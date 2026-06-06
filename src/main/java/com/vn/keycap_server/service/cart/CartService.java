@@ -1,5 +1,6 @@
 package com.vn.keycap_server.service.cart;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -121,7 +122,11 @@ public class CartService implements ICartService {
         }
 
         int newCount = cartItemRepository.sumQuantityByUserId(userId);
-        return CartCountResponse.builder().newCartCount(newCount).build();
+        BigDecimal totalPrice = cartItemRepository.sumTotalPriceByUserId(userId);
+        return CartCountResponse.builder()
+                .newCartCount(newCount)
+                .totalPrice(totalPrice)
+                .build();
     }
 
     /**
@@ -136,7 +141,11 @@ public class CartService implements ICartService {
         Long userId = getCurrentUserId();
         cartItemRepository.deleteByUserIdAndVariantId(userId, variantId);
         int newCount = cartItemRepository.sumQuantityByUserId(userId);
-        return CartCountResponse.builder().newCartCount(newCount).build();
+        BigDecimal totalPrice = cartItemRepository.sumTotalPriceByUserId(userId);
+        return CartCountResponse.builder()
+                .newCartCount(newCount)
+                .totalPrice(totalPrice)
+                .build();
     }
 
     // =================================================

@@ -1,5 +1,6 @@
 package com.vn.keycap_server.repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -68,6 +69,13 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
    */
   @Query("SELECT COALESCE(SUM(c.quantity), 0) FROM CartItem c WHERE c.user.id = :userId")
   int sumQuantityByUserId(@Param("userId") Long userId);
+
+  @Query("""
+      SELECT COALESCE(SUM(c.variant.price * c.quantity), 0)
+      FROM CartItem c
+      WHERE c.user.id = :userId
+      """)
+  BigDecimal sumTotalPriceByUserId(@Param("userId") Long userId);
 
   /**
    * Lấy toàn bộ CartItem trong giỏ hàng của một user.
