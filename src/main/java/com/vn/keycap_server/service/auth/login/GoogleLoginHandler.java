@@ -9,9 +9,10 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import com.vn.keycap_server.dto.request.LoginGoogleRequest;
-import com.vn.keycap_server.dto.response.LoginResponse;
+import com.vn.keycap_server.dto.request.auth.LoginGoogleRequest;
+import com.vn.keycap_server.dto.response.auth.LoginResponse;
 import com.vn.keycap_server.exception.BadRequestException;
+import com.vn.keycap_server.mapper.UserMapper;
 import com.vn.keycap_server.modal.User;
 import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.service.auth.TokenService;
@@ -24,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class GoogleLoginHandler implements ILoginHandler<LoginGoogleRequest> {
     private final UserRepository userRepository;
     private final TokenService tokenService;
+    private final UserMapper userMapper;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
@@ -75,7 +77,7 @@ public class GoogleLoginHandler implements ILoginHandler<LoginGoogleRequest> {
         tokenService.saveUserToken(user, accessToken);
         return LoginResponse.builder()
                 .accessToken(accessToken)
-                .user(user)
+                .user(userMapper.toUserResponse(user))
                 .build();
     }
 

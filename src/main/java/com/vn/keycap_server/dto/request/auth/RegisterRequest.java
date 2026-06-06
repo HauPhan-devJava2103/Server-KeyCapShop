@@ -1,4 +1,4 @@
-package com.vn.keycap_server.dto.request;
+package com.vn.keycap_server.dto.request.auth;
 
 import com.vn.keycap_server.utils.EOtpPurpose;
 import com.vn.keycap_server.validation.EnumValue;

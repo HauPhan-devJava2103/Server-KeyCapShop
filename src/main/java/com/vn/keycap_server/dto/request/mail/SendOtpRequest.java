@@ -1,4 +1,4 @@
-package com.vn.keycap_server.dto.request;
+package com.vn.keycap_server.dto.request.mail;
 
 import com.vn.keycap_server.utils.EOtpPurpose;
 

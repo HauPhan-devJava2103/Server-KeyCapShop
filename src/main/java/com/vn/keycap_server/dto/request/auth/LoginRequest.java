@@ -1,4 +1,4 @@
-package com.vn.keycap_server.dto.request;
+package com.vn.keycap_server.dto.request.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

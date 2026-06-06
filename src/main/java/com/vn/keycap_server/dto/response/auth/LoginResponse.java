@@ -1,6 +1,4 @@
-package com.vn.keycap_server.dto.response;
-
-import com.vn.keycap_server.modal.User;
+package com.vn.keycap_server.dto.response.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +12,6 @@ import lombok.NoArgsConstructor;
 public class LoginResponse {
 
     private String accessToken;
-    private User user;
+    private UserResponse user;
 
 }

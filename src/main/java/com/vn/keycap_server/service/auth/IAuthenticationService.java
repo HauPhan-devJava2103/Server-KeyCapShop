@@ -1,11 +1,11 @@
 package com.vn.keycap_server.service.auth;
 
-import com.vn.keycap_server.dto.request.LoginGoogleRequest;
-import com.vn.keycap_server.dto.request.LoginRequest;
-import com.vn.keycap_server.dto.request.RegisterRequest;
-import com.vn.keycap_server.dto.request.ResetPasswordRequest;
-import com.vn.keycap_server.dto.request.SendOtpRequest;
-import com.vn.keycap_server.dto.response.LoginResponse;
+import com.vn.keycap_server.dto.request.auth.LoginGoogleRequest;
+import com.vn.keycap_server.dto.request.auth.LoginRequest;
+import com.vn.keycap_server.dto.request.auth.RegisterRequest;
+import com.vn.keycap_server.dto.request.auth.ResetPasswordRequest;
+import com.vn.keycap_server.dto.request.mail.SendOtpRequest;
+import com.vn.keycap_server.dto.response.auth.LoginResponse;
 
 public interface IAuthenticationService {
 

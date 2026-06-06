@@ -14,12 +14,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
-import com.vn.keycap_server.dto.request.LoginGoogleRequest;
-import com.vn.keycap_server.dto.request.LoginRequest;
-import com.vn.keycap_server.dto.request.RegisterRequest;
-import com.vn.keycap_server.dto.request.ResetPasswordRequest;
-import com.vn.keycap_server.dto.request.SendOtpRequest;
-import com.vn.keycap_server.dto.response.LoginResponse;
+import com.vn.keycap_server.dto.request.auth.LoginGoogleRequest;
+import com.vn.keycap_server.dto.request.auth.LoginRequest;
+import com.vn.keycap_server.dto.request.auth.RegisterRequest;
+import com.vn.keycap_server.dto.request.auth.ResetPasswordRequest;
+import com.vn.keycap_server.dto.request.mail.SendOtpRequest;
+import com.vn.keycap_server.dto.response.auth.LoginResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.exception.UnauthorizedException;
 import com.vn.keycap_server.mapper.UserMapper;
@@ -142,7 +142,7 @@ public class AuthenticationService implements IAuthenticationService {
         tokenService.saveUserToken(user, accessToken);
         return LoginResponse.builder()
                 .accessToken(accessToken)
-                .user(user)
+                .user(userMapper.toUserResponse(user))
                 .build();
 
     }

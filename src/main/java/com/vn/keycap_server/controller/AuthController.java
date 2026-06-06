@@ -8,12 +8,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vn.keycap_server.dto.ApiResponse;
-import com.vn.keycap_server.dto.request.LoginGoogleRequest;
-import com.vn.keycap_server.dto.request.LoginRequest;
-import com.vn.keycap_server.dto.request.RegisterRequest;
-import com.vn.keycap_server.dto.request.ResetPasswordRequest;
-import com.vn.keycap_server.dto.request.SendOtpRequest;
-import com.vn.keycap_server.dto.response.LoginResponse;
+import com.vn.keycap_server.dto.request.auth.LoginGoogleRequest;
+import com.vn.keycap_server.dto.request.auth.LoginRequest;
+import com.vn.keycap_server.dto.request.auth.RegisterRequest;
+import com.vn.keycap_server.dto.request.auth.ResetPasswordRequest;
+import com.vn.keycap_server.dto.request.mail.SendOtpRequest;
+import com.vn.keycap_server.dto.response.auth.LoginResponse;
 import com.vn.keycap_server.service.auth.IAuthenticationService;
 
 import jakarta.validation.Valid;
