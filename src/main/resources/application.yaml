@@ -68,3 +68,11 @@ momo:
   api-url: ${MOMO_API_URL}
   redirect-url: ${MOMO_REDIRECT_URL}
   ipn-url: ${MOMO_IPN_URL}
+
+shipping:
+  ghn:
+    token: ${GHN_TOKEN}
+    shop-id: ${GHN_SHOP_ID}
+    api-url: ${GHN_API_URL}
+    from-district-id: ${GHN_FROM_DISTRICT_ID}
+    from-ward-code: ${GHN_FROM_WARD_CODE}

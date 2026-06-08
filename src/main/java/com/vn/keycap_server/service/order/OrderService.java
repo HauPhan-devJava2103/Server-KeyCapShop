@@ -16,11 +16,16 @@ import com.vn.keycap_server.dto.response.order.CheckoutItemResponse.PrepareProdu
 import com.vn.keycap_server.dto.response.order.CheckoutResponse;
 import com.vn.keycap_server.dto.response.order.PrepareCheckoutResponse;
 import com.vn.keycap_server.exception.BadRequestException;
+import com.vn.keycap_server.modal.Address;
 import com.vn.keycap_server.modal.ProductImage;
 import com.vn.keycap_server.modal.ProductVariant;
 import com.vn.keycap_server.modal.ProductVariantAttribute;
+import com.vn.keycap_server.modal.User;
+import com.vn.keycap_server.repository.AddressRepository;
 import com.vn.keycap_server.repository.ProductVariantRepository;
+import com.vn.keycap_server.repository.UserRepository;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -28,6 +33,8 @@ import lombok.RequiredArgsConstructor;
 public class OrderService implements IOrderService {
 
     private final ProductVariantRepository productVariantRepository;
+    private final AddressRepository addressRepository;
+    private final UserRepository userRepository;
 
     @Override
     public PrepareCheckoutResponse prepareOrder(List<PrepareOrderItemRequest> items, Long userId) {
@@ -104,9 +111,21 @@ public class OrderService implements IOrderService {
     }
 
     @Override
+    @Transactional
     public CheckoutResponse checkout(CheckoutRequest request, Long userId) {
 
-        return null;
+        // Get User and Address
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy người dùng"));
+
+        Address address = addressRepository.findById(request.getAddressId())
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy địa chỉ"));
+
+        return CheckoutResponse.builder()
+                .paymentRequired(false)
+                .orderId(null)
+                .payUrl(null)
+                .build();
     }
 
 }
