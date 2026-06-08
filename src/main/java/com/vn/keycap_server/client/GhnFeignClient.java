@@ -1,4 +1,4 @@
-package com.vn.keycap_server.configuration.ghn;
+package com.vn.keycap_server.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;

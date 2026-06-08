@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 import org.springframework.stereotype.Service;
 
-import com.vn.keycap_server.configuration.ghn.GhnFeignClient;
+import com.vn.keycap_server.client.GhnFeignClient;
 import com.vn.keycap_server.configuration.ghn.GhnProperties;
 import com.vn.keycap_server.dto.request.shipping.GhnFeeRequest;
 import com.vn.keycap_server.dto.response.shipping.GhnFeeResponse;

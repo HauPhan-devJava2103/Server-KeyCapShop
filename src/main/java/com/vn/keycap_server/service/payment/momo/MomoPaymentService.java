@@ -2,7 +2,6 @@ package com.vn.keycap_server.service.payment.momo;
 
 import java.util.UUID;
 
-import com.vn.keycap_server.exception.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import com.vn.keycap_server.client.MomoFeignClient;
@@ -10,10 +9,10 @@ import com.vn.keycap_server.configuration.momo.MomoProperties;
 import com.vn.keycap_server.dto.request.payment.momo.MomoCreateRequest;
 import com.vn.keycap_server.dto.request.payment.momo.MomoIpnRequest;
 import com.vn.keycap_server.dto.response.payment.momo.MomoCreateResponse;
+import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.repository.OrderRepository;
 import com.vn.keycap_server.utils.EOrderStatus;
-import com.vn.keycap_server.utils.EPaymentMethod;
 import com.vn.keycap_server.utils.MoMoEncoder;
 
 import lombok.RequiredArgsConstructor;
@@ -74,9 +73,8 @@ public class MomoPaymentService implements IMomoPaymentService {
             throw new BadRequestException("Tạo thanh toán MoMo thất bại: " + msg);
         }
 
-        // Update Order
-        order.setPaymentMethod(EPaymentMethod.MOMO);
-        order.setStatus(EOrderStatus.PENDING);
+        // Lưu transactionId từ MoMo (momoOrderId) để tra cứu khi IPN callback
+        order.setTransactionId(momoOrderId);
         orderRepository.save(order);
 
         return momoResponse;
