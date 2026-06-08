@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vn.keycap_server.dto.ApiResponse;
+import com.vn.keycap_server.dto.request.order.CheckoutRequest;
 import com.vn.keycap_server.dto.request.order.PrepareOrderItemRequest;
 import com.vn.keycap_server.service.order.IOrderService;
 
@@ -34,6 +35,18 @@ public class OrderController {
                 .success(true)
                 .message("Chuẩn bị đơn hàng thành công!")
                 .data(orderService.prepareOrder(items, userId))
+                .build());
+    }
+
+    @PostMapping("/checkout")
+    public ResponseEntity<ApiResponse> checkoutOrder(
+            @RequestBody @Valid CheckoutRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Thanh toán thành công!")
+                .data(null)
                 .build());
     }
 

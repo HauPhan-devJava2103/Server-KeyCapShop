@@ -61,4 +61,9 @@ public class Order extends AbstractEntity {
 
     @Column(name = "transaction_id")
     private String transactionId;
+
+    // Địa chỉ giao hàng
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
+    private Address address;
 }

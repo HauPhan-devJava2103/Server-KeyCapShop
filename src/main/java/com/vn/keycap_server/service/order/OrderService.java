@@ -9,9 +9,11 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.vn.keycap_server.dto.request.order.CheckoutRequest;
 import com.vn.keycap_server.dto.request.order.PrepareOrderItemRequest;
 import com.vn.keycap_server.dto.response.order.CheckoutItemResponse;
 import com.vn.keycap_server.dto.response.order.CheckoutItemResponse.PrepareProductInfo;
+import com.vn.keycap_server.dto.response.order.CheckoutResponse;
 import com.vn.keycap_server.dto.response.order.PrepareCheckoutResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.modal.ProductImage;
@@ -99,6 +101,12 @@ public class OrderService implements IOrderService {
                 .shippingFee(feeShip)
                 .totalAmount(totalAmount)
                 .build();
+    }
+
+    @Override
+    public CheckoutResponse checkout(CheckoutRequest request, Long userId) {
+
+        return null;
     }
 
 }

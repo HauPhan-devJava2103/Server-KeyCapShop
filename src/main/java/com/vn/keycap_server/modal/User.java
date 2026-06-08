@@ -60,4 +60,8 @@ public class User extends AbstractEntity {
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserToken> tokens;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Address> addresses;
 }
