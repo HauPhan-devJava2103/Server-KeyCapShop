@@ -53,3 +53,8 @@ google:
     token-uri: ${GOOGLE_TOKEN_URI}
     auth-provider-x509-cert-url: ${GOOGLE_AUTH_PROVIDER_CERT_URL}
     javascript-origins: ${GOOGLE_JAVASCRIPT_ORIGINS}
+
+store:
+  location:
+    latitude: ${STORE_LATITUDE:}
+    longitude: ${STORE_LONGITUDE:}
