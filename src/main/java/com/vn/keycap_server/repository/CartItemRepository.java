@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -81,6 +82,18 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
    * Lấy toàn bộ CartItem trong giỏ hàng của một user.
    */
   List<CartItem> findByUserId(Long userId);
+
+  /**
+   * Lấy chi tiết giỏ hàng kèm product, ảnh và attributes để trả cho FE.
+   */
+  @EntityGraph(attributePaths = {
+      "variant",
+      "variant.product",
+      "variant.product.images",
+      "variant.attributes"
+  })
+  @Query("SELECT c FROM CartItem c WHERE c.user.id = :userId ORDER BY c.id ASC")
+  List<CartItem> findDetailsByUserId(@Param("userId") Long userId);
 
   /**
    * Xóa CartItem theo userId và variantId.

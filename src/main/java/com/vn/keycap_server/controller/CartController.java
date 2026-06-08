@@ -43,6 +43,23 @@ public class CartController {
     }
 
     /**
+     * GET /cart
+     * @returns CartDetailResponse
+     *
+     * Mô tả: Lấy chi tiết giỏ hàng của người dùng hiện tại
+     *  - items: Danh sách sản phẩm trong giỏ hàng
+     *  - summary: Tổng tiền và tổng số lượng sản phẩm trong giỏ hàng
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse> getCarts() {
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Lấy chi tiết giỏ hàng thành công")
+                .data(cartService.getCarts())
+                .build());
+    }
+
+    /**
      * POST /cart/items
      * Mô tả: Thêm sản phẩm vào giỏ hàng. Nếu đã có thì cộng dồn số lượng.
      */
