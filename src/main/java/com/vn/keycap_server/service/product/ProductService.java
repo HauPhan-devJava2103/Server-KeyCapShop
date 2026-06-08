@@ -433,6 +433,88 @@ public class ProductService implements IProductService {
                 return new PageImpl<>(productCards, pageable, productPage.getTotalElements());
         }
 
+        // Số lượng sản phẩm có mối quan hệ với các sp trong cart tối đa và max mặc định
+        private static final int DEFAULT_RELATED_LIMIT = 10;
+        private static final int MAX_RELATED_LIMIT = 20;
+
+        /**
+         * GET /products/related
+         * 
+         * @param productIds string[]
+         * @returns ProductItem[]
+         *
+         *          Mô tả: Lấy danh sách các sản phẩm liên quan đến các sản phẩm trong
+         *          giỏ hàng
+         *          - productIds: Danh sách các ID của sản phẩm
+         *          - giới hạn chỉ trả về tối đa size sản phẩm
+         */
+        @Override
+        @Transactional(readOnly = true)
+        public List<ProductCardResponse> getRelatedProducts(List<String> productIds, int size) {
+                // 1. Parse và validate productIds từ query param; id sai format sẽ trả
+                // BadRequestException.
+                List<Long> parsedProductIds = parseProductIds(productIds);
+                if (parsedProductIds.isEmpty())
+                        return Collections.emptyList();
+
+                // 2. Chuẩn hóa size để FE không thể request quá nhiều sản phẩm liên quan.
+                int safeSize = normalizeRelatedLimit(size);
+
+                // 3. Lấy userId nếu có đăng nhập để gắn trạng thái isFavorite cho từng product.
+                Long currentUserId = getCurrentUserId();
+
+                // 4. Lấy sản phẩm nguồn từ giỏ hàng theo category/type/brand.
+                List<Product> sourceProducts = productRepository.findByIdIn(parsedProductIds);
+                if (sourceProducts.isEmpty())
+                        return Collections.emptyList();
+
+                // 5. Gom categoryId của sản phẩm trong giỏ để query sản phẩm cùng nhóm.
+                List<Long> categoryIds = toSafeIdList(sourceProducts.stream()
+                                .map(product -> product.getCategory() != null ? product.getCategory().getId() : null)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet()));
+
+                // 6. Gom typeId của sản phẩm trong giỏ để query sản phẩm cùng loại.
+                List<Long> typeIds = toSafeIdList(sourceProducts.stream()
+                                .map(product -> product.getType() != null ? product.getType().getId() : null)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet()));
+
+                // 7. Gom brandId của sản phẩm trong giỏ để query sản phẩm cùng thương hiệu.
+                List<Long> brandIds = toSafeIdList(sourceProducts.stream()
+                                .map(product -> product.getBrand() != null ? product.getBrand().getId() : null)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet()));
+
+                // 8. Query related products: loại trừ product hiện có trong giỏ, chỉ lấy
+                // AVAILABLE và còn hàng.
+                Pageable pageable = PageRequest.of(0, safeSize);
+                List<Product> relatedProducts = productRepository.findRelatedProductsForCart(
+                                categoryIds,
+                                typeIds,
+                                brandIds,
+                                parsedProductIds,
+                                EProductStatus.AVAILABLE,
+                                pageable);
+
+                // 9. Query wishlist để tránh N+1 khi set isFavorite.
+                Set<Long> favoriteProductIds = (currentUserId != null && !relatedProducts.isEmpty())
+                                ? new HashSet<>(wishlistRepository.findFavoriteProductIds(currentUserId))
+                                : new HashSet<>();
+
+                // 10. Map Product entity sang ProductCardResponse.
+                return relatedProducts.stream()
+                                .map(product -> {
+                                        ProductCardResponse card = productMapper.productToProductCardResponse(product);
+                                        // 10.1. Nếu user đã đăng nhập thì đánh dấu favorite theo wishlist, còn lại
+                                        // false.
+                                        card.setFavorite(currentUserId != null
+                                                        && favoriteProductIds.contains(product.getId()));
+                                        return card;
+                                })
+                                .collect(Collectors.toList());
+        }
+
         /**
          * Lấy danh sách các bộ lọc cho sản phẩm (Danh mục, Loại sản phẩm, Thương hiệu).
          * 
@@ -553,6 +635,44 @@ public class ProductService implements IProductService {
                 if (limit <= 0)
                         return defaultLimit; // Sử dụng giá trị mặc định nếu limit không hợp lệ
                 return Math.min(limit, 100); // Giới hạn tối đa để tránh truy vấn quá nhiều dữ liệu
+        }
+
+        private int normalizeRelatedLimit(int size) {
+                // 1. Nếu FE không truyền size hoặc truyền <= 0 thì dùng default.
+                if (size <= 0)
+                        return DEFAULT_RELATED_LIMIT;
+                return Math.min(size, MAX_RELATED_LIMIT);
+        }
+
+        private List<Long> parseProductIds(List<String> productIds) {
+                // 1. Danh sách rỗng là hợp lệ, service sẽ trả data rỗng cho FE.
+                if (productIds == null || productIds.isEmpty())
+                        return Collections.emptyList();
+                // 2. Chuẩn hóa chuỗi, parse sang Long, bỏ id không dương và loại trùng.
+                return productIds.stream()
+                                .filter(Objects::nonNull)
+                                .map(String::trim)
+                                .filter(value -> !value.isBlank())
+                                .map(value -> {
+                                        try {
+                                                return Long.parseLong(value);
+                                        } catch (NumberFormatException e) {
+                                                throw new BadRequestException("productIds phải là danh sách ID hợp lệ");
+                                        }
+                                })
+                                .filter(id -> id > 0)
+                                .distinct()
+                                .collect(Collectors.toList());
+        }
+
+        private List<Long> toSafeIdList(Set<Long> ids) {
+                // 1. Nếu không có id thì dùng sentinel để JPQL IN không nhận list rỗng.
+                if (ids == null || ids.isEmpty())
+                        return List.of(-1L);
+
+                // 2. Copy sang immutable list để tránh bị chỉnh sửa ngoài ý muốn trước khi
+                // query.
+                return List.copyOf(ids);
         }
 
         private boolean isPriceSort(ESortOption sortOption) {

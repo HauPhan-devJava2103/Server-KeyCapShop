@@ -1,5 +1,7 @@
 package com.vn.keycap_server.service.product;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 
 import com.vn.keycap_server.dto.request.product.ListProductRequest;
@@ -71,6 +73,17 @@ public interface IProductService {
      *         trang thô
      */
     Page<ProductCardResponse> getRecommendProducts(ListRecommendProductRequest request);
+
+    /**
+     * GET /products/related
+     * @param productIds string[]
+     * @returns ProductItem[]
+     *
+     * Mô tả: Lấy danh sách các sản phẩm liên quan đến các sản phẩm trong giỏ hàng
+     *  - productIds: Danh sách các ID của sản phẩm
+     *  - giới hạn chỉ trả về tối đa size sản phẩm
+     */
+    List<ProductCardResponse> getRelatedProducts(List<String> productIds, int size);
 
     /**
      * Lấy danh sách các bộ lọc cho sản phẩm (Danh mục, Loại sản phẩm, Thương hiệu).
