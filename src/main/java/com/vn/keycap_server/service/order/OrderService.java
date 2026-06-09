@@ -11,7 +11,8 @@ import org.springframework.stereotype.Service;
 
 import com.vn.keycap_server.dto.request.order.CheckoutItemRequest;
 import com.vn.keycap_server.dto.request.order.CheckoutRequest;
-import com.vn.keycap_server.dto.request.order.PrepareOrderItemRequest;
+import com.vn.keycap_server.dto.request.order.PrepareCheckoutRequestWrapper;
+import com.vn.keycap_server.dto.request.order.PrepareCheckoutRequestWrapper.PrepareCheckoutRequest;
 import com.vn.keycap_server.dto.response.order.CheckoutItemResponse;
 import com.vn.keycap_server.dto.response.order.CheckoutItemResponse.PrepareProductInfo;
 import com.vn.keycap_server.dto.response.order.CheckoutResponse;
@@ -41,181 +42,195 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OrderService implements IOrderService {
 
-    private final ProductVariantRepository productVariantRepository;
-    private final AddressRepository addressRepository;
-    private final UserRepository userRepository;
-    private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final CartItemRepository cartItemRepository;
+        private final ProductVariantRepository productVariantRepository;
+        private final AddressRepository addressRepository;
+        private final UserRepository userRepository;
+        private final OrderRepository orderRepository;
+        private final OrderItemRepository orderItemRepository;
+        private final CartItemRepository cartItemRepository;
 
-    private final GhnShippingService ghnShippingService;
+        private final GhnShippingService ghnShippingService;
 
-    private final List<IPaymentStrategy> paymentStrategies;
+        private final List<IPaymentStrategy> paymentStrategies;
 
-    @Override
-    public PrepareCheckoutResponse prepareOrder(List<PrepareOrderItemRequest> items, Long userId) {
-        // Get VarientIds
-        List<Long> varientIds = items.stream().map(PrepareOrderItemRequest::getVariantId).toList();
-        // List ProductVarient
-        List<ProductVariant> productVariants = productVariantRepository.findAllByWithProductAndAttributes(varientIds);
+        @Override
+        public PrepareCheckoutResponse prepareOrder(PrepareCheckoutRequestWrapper request, Long userId) {
+                List<PrepareCheckoutRequest> items = request.getItems();
+                // Get VarientIds
+                List<Long> varientIds = items.stream().map(PrepareCheckoutRequest::getVariantId).toList();
+                // List ProductVarient
+                List<ProductVariant> productVariants = productVariantRepository
+                                .findAllByWithProductAndAttributes(varientIds);
 
-        // Map ProductVarient
-        Map<Long, ProductVariant> variantMap = productVariants.stream()
-                .collect(Collectors.toMap(ProductVariant::getId, Function.identity()));
-        // Subtotal
-        BigDecimal subtotal = BigDecimal.ZERO;
+                // Map ProductVarient
+                Map<Long, ProductVariant> variantMap = productVariants.stream()
+                                .collect(Collectors.toMap(ProductVariant::getId, Function.identity()));
+                // Get Address
+                Address address = addressRepository.findById(request.getAddressId())
+                                .orElseThrow(() -> new BadRequestException("Địa chỉ không tồn tại"));
+                // Subtotal
+                BigDecimal subtotal = BigDecimal.ZERO;
 
-        List<CheckoutItemResponse> response = new ArrayList<>();
-        for (PrepareOrderItemRequest item : items) {
-            ProductVariant productVariant = variantMap.get(item.getVariantId());
+                List<CheckoutItemResponse> response = new ArrayList<>();
+                for (PrepareCheckoutRequest item : items) {
+                        ProductVariant productVariant = variantMap.get(item.getVariantId());
 
-            if (productVariant == null) {
-                throw new BadRequestException("Sản phẩm với variantId=" + item.getVariantId() + " không tồn tại");
-            }
-            // Check Stock Quantity
-            if (productVariant.getStockQuantity() < item.getQuantity()) {
-                throw new BadRequestException(
-                        "Sản phẩm '" + productVariant.getProduct().getName() + "' không đủ số lượng");
-            }
-            BigDecimal amount = productVariant.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-            subtotal = subtotal.add(amount);
+                        if (productVariant == null) {
+                                throw new BadRequestException(
+                                                "Sản phẩm với variantId=" + item.getVariantId() + " không tồn tại");
+                        }
+                        // Check Stock Quantity
+                        if (productVariant.getStockQuantity() < item.getQuantity()) {
+                                throw new BadRequestException(
+                                                "Sản phẩm '" + productVariant.getProduct().getName()
+                                                                + "' không đủ số lượng");
+                        }
+                        BigDecimal amount = productVariant.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+                        subtotal = subtotal.add(amount);
 
-            Map<String, String> attributes = productVariant.getAttributes().stream()
-                    .collect(Collectors.toMap(
-                            ProductVariantAttribute::getName,
-                            ProductVariantAttribute::getValue));
-            // Get Image Primary
-            String imageUrl = productVariant.getProduct().getImages()
-                    .stream()
-                    .filter(img -> Boolean.TRUE.equals(img.getPrimary()))
-                    .findFirst().map(ProductImage::getUrl)
-                    .orElse(productVariant.getProduct().getImages().isEmpty() ? null
-                            : productVariant.getProduct().getImages().get(0).getUrl());
+                        Map<String, String> attributes = productVariant.getAttributes().stream()
+                                        .collect(Collectors.toMap(
+                                                        ProductVariantAttribute::getName,
+                                                        ProductVariantAttribute::getValue));
+                        // Get Image Primary
+                        String imageUrl = productVariant.getProduct().getImages()
+                                        .stream()
+                                        .filter(img -> Boolean.TRUE.equals(img.getPrimary()))
+                                        .findFirst().map(ProductImage::getUrl)
+                                        .orElse(productVariant.getProduct().getImages().isEmpty() ? null
+                                                        : productVariant.getProduct().getImages().get(0).getUrl());
 
-            response
-                    .add(
-                            CheckoutItemResponse.builder()
-                                    .product(
-                                            PrepareProductInfo.builder()
-                                                    .id(productVariant.getId())
-                                                    .name(productVariant.getProduct().getName())
-                                                    .imageUrl(imageUrl)
-                                                    .attributes(attributes)
-                                                    .price(productVariant.getPrice())
-                                                    .originalPrice(productVariant.getOriginalPrice())
-                                                    .discountPercentage(productVariant.getPercentDiscount())
-                                                    .build())
-                                    .quantity(item.getQuantity())
-                                    .amount(amount)
-                                    .build());
+                        response.add(CheckoutItemResponse.builder()
+                                        .product(
+                                                        PrepareProductInfo.builder()
+                                                                        .id(productVariant.getId())
+                                                                        .name(productVariant.getProduct().getName())
+                                                                        .imageUrl(imageUrl)
+                                                                        .attributes(attributes)
+                                                                        .price(productVariant.getPrice())
+                                                                        .originalPrice(productVariant
+                                                                                        .getOriginalPrice())
+                                                                        .discountPercentage(productVariant
+                                                                                        .getPercentDiscount())
+                                                                        .build())
+                                        .quantity(item.getQuantity())
+                                        .amount(amount)
+                                        .build());
 
+                }
+
+                // Total Weight
+                int totalWeight = 1000; // TODO: Phát triển thêm sau này giả định 1kg
+
+                // Shipping Fee
+                BigDecimal shippingFee = ghnShippingService.calculateShippingFee(address, totalWeight);
+
+                // Total Amount
+                BigDecimal totalAmount = subtotal.add(shippingFee);
+
+                // Prepare response
+                return PrepareCheckoutResponse.builder()
+                                .items(response)
+                                .subtotal(subtotal)
+                                .shippingFee(shippingFee)
+                                .totalAmount(totalAmount)
+                                .build();
         }
 
-        // Price Shipping (Xử lý logic sau khi có API Ship)
-        BigDecimal feeShip = BigDecimal.valueOf(30000);
+        @Override
+        @Transactional
+        public CheckoutResponse checkout(CheckoutRequest request, Long userId) {
+                // Get User and Address
+                User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new BadRequestException("Không tìm thấy người dùng"));
 
-        // Total Amount
-        BigDecimal totalAmount = subtotal.add(feeShip);
+                Address address = addressRepository.findById(request.getAddressId())
+                                .orElseThrow(() -> new BadRequestException("Không tìm thấy địa chỉ"));
+                if (!address.getUser().getId().equals(userId)) {
+                        throw new BadRequestException("Địa chỉ không thuộc người dùng này");
+                }
 
-        // Prepare response
-        return PrepareCheckoutResponse.builder()
-                .items(response)
-                .subtotal(subtotal)
-                .shippingFee(feeShip)
-                .totalAmount(totalAmount)
-                .build();
-    }
+                // Get VarientIds
+                List<Long> varientIds = request.getItems().stream().map(CheckoutItemRequest::getVariantId).toList();
+                // List ProductVarient
+                List<ProductVariant> productVariants = productVariantRepository
+                                .findAllByWithProductAndAttributes(varientIds);
 
-    @Override
-    @Transactional
-    public CheckoutResponse checkout(CheckoutRequest request, Long userId) {
-        // Get User and Address
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BadRequestException("Không tìm thấy người dùng"));
+                // Map ProductVarient
+                Map<Long, ProductVariant> variantMap = productVariants.stream()
+                                .collect(Collectors.toMap(ProductVariant::getId, Function.identity()));
 
-        Address address = addressRepository.findById(request.getAddressId())
-                .orElseThrow(() -> new BadRequestException("Không tìm thấy địa chỉ"));
-        if (!address.getUser().getId().equals(userId)) {
-            throw new BadRequestException("Địa chỉ không thuộc người dùng này");
+                // Subtotal
+                BigDecimal subtotal = BigDecimal.ZERO;
+                for (CheckoutItemRequest item : request.getItems()) {
+                        ProductVariant productVariant = variantMap.get(item.getVariantId());
+
+                        if (productVariant == null) {
+                                throw new BadRequestException(
+                                                "Sản phẩm với variantId=" + item.getVariantId() + " không tồn tại");
+                        }
+                        // Check Stock Quantity
+                        if (productVariant.getStockQuantity() < item.getQuantity()) {
+                                throw new BadRequestException(
+                                                "Sản phẩm '" + productVariant.getProduct().getName()
+                                                                + "' không đủ số lượng");
+                        }
+                        BigDecimal amount = productVariant.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+                        subtotal = subtotal.add(amount);
+
+                        // Delete Stock
+                        productVariant.setStockQuantity(productVariant.getStockQuantity() - item.getQuantity());
+                }
+
+                // Total Weight
+                int totalWeight = 1000; // TODO: Phát triển thêm sau này giả định 1kg
+
+                // Shipping Fee
+                BigDecimal shippingFee = ghnShippingService.calculateShippingFee(address, totalWeight);
+
+                // Apply Vouchers - TODO
+
+                // Total Amount
+                BigDecimal totalAmount = subtotal.add(shippingFee);
+
+                // Create Order
+                Order order = Order.builder()
+                                .user(user)
+                                .address(address)
+                                .totalAmount(totalAmount)
+                                .status(EOrderStatus.PENDING)
+                                .paymentMethod(request.getPaymentMethod())
+                                .build();
+                orderRepository.save(order);
+
+                // Order Items
+                List<OrderItem> orderItems = new ArrayList<>();
+                for (CheckoutItemRequest item : request.getItems()) {
+                        ProductVariant productVariant = variantMap.get(item.getVariantId());
+                        orderItems.add(OrderItem.builder()
+                                        .order(order)
+                                        .variant(productVariant)
+                                        .quantity(item.getQuantity())
+                                        .price(productVariant.getPrice())
+                                        .build());
+
+                }
+                orderItemRepository.saveAll(orderItems);
+                productVariantRepository.saveAll(productVariants);
+
+                // If have cartIds
+                if (request.getCartItemIds() != null && !request.getCartItemIds().isEmpty()) {
+                        cartItemRepository.deleteAllByIdInBatch(request.getCartItemIds());
+                }
+
+                IPaymentStrategy selectedStrategy = paymentStrategies.stream()
+                                .filter(strategy -> strategy.getSupportedMethod() == request.getPaymentMethod())
+                                .findFirst()
+                                .orElseThrow(() -> new BadRequestException(
+                                                "Phương thức thanh toán " + request.getPaymentMethod()
+                                                                + " chưa được hỗ trợ!"));
+
+                return selectedStrategy.processPayment(order, userId);
         }
-
-        // Get VarientIds
-        List<Long> varientIds = request.getItems().stream().map(CheckoutItemRequest::getVariantId).toList();
-        // List ProductVarient
-        List<ProductVariant> productVariants = productVariantRepository.findAllByWithProductAndAttributes(varientIds);
-
-        // Map ProductVarient
-        Map<Long, ProductVariant> variantMap = productVariants.stream()
-                .collect(Collectors.toMap(ProductVariant::getId, Function.identity()));
-
-        // Subtotal
-        BigDecimal subtotal = BigDecimal.ZERO;
-        for (CheckoutItemRequest item : request.getItems()) {
-            ProductVariant productVariant = variantMap.get(item.getVariantId());
-
-            if (productVariant == null) {
-                throw new BadRequestException("Sản phẩm với variantId=" + item.getVariantId() + " không tồn tại");
-            }
-            // Check Stock Quantity
-            if (productVariant.getStockQuantity() < item.getQuantity()) {
-                throw new BadRequestException(
-                        "Sản phẩm '" + productVariant.getProduct().getName() + "' không đủ số lượng");
-            }
-            BigDecimal amount = productVariant.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-            subtotal = subtotal.add(amount);
-
-            // Delete Stock
-            productVariant.setStockQuantity(productVariant.getStockQuantity() - item.getQuantity());
-        }
-
-        // Total Weight
-        int totalWeight = 1000; // TODO: Phát triển thêm sau này giả định 1kg
-
-        // Shipping Fee
-        BigDecimal shippingFee = ghnShippingService.calculateShippingFee(address, totalWeight);
-
-        // Apply Vouchers - TODO
-
-        // Total Amount
-        BigDecimal totalAmount = subtotal.add(shippingFee);
-
-        // Create Order
-        Order order = Order.builder()
-                .user(user)
-                .address(address)
-                .totalAmount(totalAmount)
-                .status(EOrderStatus.PENDING)
-                .paymentMethod(request.getPaymentMethod())
-                .build();
-        orderRepository.save(order);
-
-        // Order Items
-        List<OrderItem> orderItems = new ArrayList<>();
-        for (CheckoutItemRequest item : request.getItems()) {
-            ProductVariant productVariant = variantMap.get(item.getVariantId());
-            orderItems.add(OrderItem.builder()
-                    .order(order)
-                    .variant(productVariant)
-                    .quantity(item.getQuantity())
-                    .price(productVariant.getPrice())
-                    .build());
-
-        }
-        orderItemRepository.saveAll(orderItems);
-        productVariantRepository.saveAll(productVariants);
-
-        // If have cartIds
-        if (request.getCartItemIds() != null && !request.getCartItemIds().isEmpty()) {
-            cartItemRepository.deleteAllByIdInBatch(request.getCartItemIds());
-        }
-
-        IPaymentStrategy selectedStrategy = paymentStrategies.stream()
-                .filter(strategy -> strategy.getSupportedMethod() == request.getPaymentMethod())
-                .findFirst()
-                .orElseThrow(() -> new BadRequestException(
-                        "Phương thức thanh toán " + request.getPaymentMethod() + " chưa được hỗ trợ!"));
-
-        return selectedStrategy.processPayment(order, userId);
-    }
 
 }
