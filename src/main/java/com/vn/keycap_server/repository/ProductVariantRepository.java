@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.vn.keycap_server.modal.ProductVariant;
 
-import feign.Param;
+import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Long> {
@@ -16,7 +16,6 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     @Query("SELECT DISTINCT v FROM ProductVariant v " +
             "JOIN FETCH v.product p " +
             "LEFT JOIN FETCH v.attributes " +
-            "LEFT JOIN FETCH p.images " +
             "WHERE v.id IN :ids")
     List<ProductVariant> findAllByWithProductAndAttributes(@Param("ids") List<Long> id);
 

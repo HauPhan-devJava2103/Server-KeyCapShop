@@ -12,7 +12,7 @@ import com.vn.keycap_server.service.payment.momo.IMomoPaymentService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("")
+@RequestMapping("/api/payment/momo")
 @RequiredArgsConstructor
 public class PaymentController {
 

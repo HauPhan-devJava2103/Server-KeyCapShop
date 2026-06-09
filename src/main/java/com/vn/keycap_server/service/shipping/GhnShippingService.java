@@ -22,7 +22,7 @@ public class GhnShippingService implements IShippingService {
     @Override
     public BigDecimal calculateShippingFee(Address address, int totalWeight) {
         GhnFeeRequest request = GhnFeeRequest.builder()
-                .service_id(53320)
+                .service_type_id(2)
                 .from_district_id(ghnProperties.getFromDistrictId())
                 .from_ward_code(ghnProperties.getFromWardCode())
                 .to_district_id(Integer.parseInt(address.getDistrictCode()))
