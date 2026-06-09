@@ -15,6 +15,9 @@ import com.vn.keycap_server.service.order.IOrderService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequiredArgsConstructor
@@ -45,6 +48,16 @@ public class OrderController {
                 .success(true)
                 .message("Thanh toán thành công!")
                 .data(orderService.checkout(request, userId))
+                .build());
+    }
+
+    @GetMapping("/checkout/{orderId}/payment-status")
+    public ResponseEntity<ApiResponse> getOrderResult(
+            @PathVariable Long orderId) {
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Lấy trạng thái thanh toán thành công!")
+                .data(orderService.getPaymentStatus(orderId))
                 .build());
     }
 

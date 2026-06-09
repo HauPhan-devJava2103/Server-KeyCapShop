@@ -16,6 +16,7 @@ import com.vn.keycap_server.dto.request.order.PrepareCheckoutRequestWrapper.Prep
 import com.vn.keycap_server.dto.response.order.CheckoutItemResponse;
 import com.vn.keycap_server.dto.response.order.CheckoutItemResponse.PrepareProductInfo;
 import com.vn.keycap_server.dto.response.order.CheckoutResponse;
+import com.vn.keycap_server.dto.response.order.CheckoutResult;
 import com.vn.keycap_server.dto.response.order.PrepareCheckoutResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.modal.Address;
@@ -231,6 +232,17 @@ public class OrderService implements IOrderService {
                                                                 + " chưa được hỗ trợ!"));
 
                 return selectedStrategy.processPayment(order, userId);
+        }
+
+        @Override
+        public CheckoutResult getPaymentStatus(Long orderId) {
+                Order order = orderRepository.findById(orderId)
+                                .orElseThrow(() -> new BadRequestException("Đơn hàng không tồn tại"));
+                return CheckoutResult.builder()
+                                .orderId(order.getId())
+                                .paymentMethod(order.getPaymentMethod())
+                                .paymentStatus(order.getStatus())
+                                .build();
         }
 
 }
