@@ -2,6 +2,7 @@ package com.vn.keycap_server.service.payment.momo;
 
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import com.vn.keycap_server.client.MomoFeignClient;
@@ -12,6 +13,7 @@ import com.vn.keycap_server.dto.response.payment.momo.MomoCreateResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.repository.OrderRepository;
+import com.vn.keycap_server.service.order.event.OrderCompletedEvent;
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.MoMoEncoder;
 
@@ -24,6 +26,8 @@ public class MomoPaymentService implements IMomoPaymentService {
     private final MomoFeignClient momoFeignClient;
     private final MomoProperties momoProperties;
     private final OrderRepository orderRepository;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public MomoCreateResponse createPayment(Long orderId, Long userId) {
@@ -108,6 +112,7 @@ public class MomoPaymentService implements IMomoPaymentService {
         if (ipn.getResultCode() == 0) {
             order.setStatus(EOrderStatus.SUCCESS);
             order.setTransactionId(String.valueOf(ipn.getTransId()));
+            eventPublisher.publishEvent(new OrderCompletedEvent(this, order.getId(), order.getUser().getId()));
         } else {
             order.setStatus(EOrderStatus.CANCELLED);
         }

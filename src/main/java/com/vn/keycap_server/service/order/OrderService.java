@@ -230,8 +230,8 @@ public class OrderService implements IOrderService {
                                 .orElseThrow(() -> new BadRequestException(
                                                 "Phương thức thanh toán " + request.getPaymentMethod()
                                                                 + " chưa được hỗ trợ!"));
-
-                return selectedStrategy.processPayment(order, userId);
+                CheckoutResponse response = selectedStrategy.processPayment(order, userId);
+                return response;
         }
 
         @Override
