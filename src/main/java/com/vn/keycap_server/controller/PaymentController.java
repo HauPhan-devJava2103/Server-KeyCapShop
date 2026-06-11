@@ -12,13 +12,13 @@ import com.vn.keycap_server.service.payment.momo.IMomoPaymentService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/payment/momo")
+@RequestMapping("/api/payment")
 @RequiredArgsConstructor
 public class PaymentController {
 
     private final IMomoPaymentService momoPaymentService;
 
-    @PostMapping("/ipn")
+    @PostMapping("/momo/ipn")
     public ResponseEntity<Void> handleIpn(@RequestBody MomoIpnRequest ipnRequest) {
         momoPaymentService.handleIpnCallback(ipnRequest);
         return ResponseEntity.noContent().build();
