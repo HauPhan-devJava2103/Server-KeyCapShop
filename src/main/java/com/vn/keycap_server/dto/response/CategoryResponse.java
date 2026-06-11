@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @Data
 public class CategoryResponse {
-    private String id;
+    private Long id;
     private String name;
     private String slug;
 }

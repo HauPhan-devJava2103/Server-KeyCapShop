@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentMethod;
+import com.vn.keycap_server.utils.EPaymentStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +13,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -59,6 +61,11 @@ public class Order extends AbstractEntity {
     @Column(name = "payment_method")
     private EPaymentMethod paymentMethod;
 
+    // Trạng thái thanh toán (PENDING, PAID, FAILED)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status")
+    private EPaymentStatus paymentStatus;
+
     @Column(name = "transaction_id")
     private String transactionId;
 
@@ -66,4 +73,8 @@ public class Order extends AbstractEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id")
     private Address address;
+
+    // Danh sách sản phẩm trong đơn hàng
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    private java.util.List<OrderItem> items;
 }

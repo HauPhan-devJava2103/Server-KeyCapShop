@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 public class ProductCardResponse {
 
     // Mã định danh duy nhất của sản phẩm
-    private String id;
+    private Long id;
 
     // Tên sản phẩm
     private String name;

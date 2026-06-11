@@ -1,7 +1,7 @@
 package com.vn.keycap_server.dto.response.order;
 
-import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentMethod;
+import com.vn.keycap_server.utils.EPaymentStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,5 +15,5 @@ import lombok.NoArgsConstructor;
 public class CheckoutResult {
     private Long orderId;
     private EPaymentMethod paymentMethod;
-    private EOrderStatus paymentStatus;
+    private EPaymentStatus paymentStatus;
 }

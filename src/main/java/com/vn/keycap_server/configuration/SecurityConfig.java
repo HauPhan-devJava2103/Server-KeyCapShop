@@ -40,6 +40,7 @@ public class SecurityConfig {
         httpSecurity.authorizeHttpRequests(request -> request
                 .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payment/momo/ipn").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/payment/vnpay/ipn").permitAll()
                 .requestMatchers(HttpMethod.GET, "/products/**", "/reviews").permitAll()
                 .anyRequest().authenticated());
 

@@ -45,7 +45,7 @@ public class OrderController {
                 Long userId = jwt.getClaim("userId");
                 return ResponseEntity.ok(ApiResponse.builder()
                                 .success(true)
-                                .message("Thanh toán thành công!")
+                                .message("Tạo đơn hàng thanh toán thành công!")
                                 .data(orderService.checkout(request, userId))
                                 .build());
         }

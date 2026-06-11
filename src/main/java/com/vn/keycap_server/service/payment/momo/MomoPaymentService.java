@@ -15,6 +15,7 @@ import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.repository.OrderRepository;
 import com.vn.keycap_server.service.order.event.OrderCompletedEvent;
 import com.vn.keycap_server.utils.EOrderStatus;
+import com.vn.keycap_server.utils.EPaymentStatus;
 import com.vn.keycap_server.utils.MoMoEncoder;
 
 import lombok.RequiredArgsConstructor;
@@ -110,10 +111,12 @@ public class MomoPaymentService implements IMomoPaymentService {
 
         // Update Status
         if (ipn.getResultCode() == 0) {
-            order.setStatus(EOrderStatus.SUCCESS);
+            order.setPaymentStatus(EPaymentStatus.PAID);
+            order.setStatus(EOrderStatus.CONFIRMED);
             order.setTransactionId(String.valueOf(ipn.getTransId()));
             eventPublisher.publishEvent(new OrderCompletedEvent(this, order.getId(), order.getUser().getId()));
         } else {
+            order.setPaymentStatus(EPaymentStatus.FAILED);
             order.setStatus(EOrderStatus.CANCELLED);
         }
         orderRepository.save(order);

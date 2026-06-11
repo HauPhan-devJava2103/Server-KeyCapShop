@@ -35,6 +35,7 @@ import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.service.payment.IPaymentStrategy;
 import com.vn.keycap_server.service.shipping.GhnShippingService;
 import com.vn.keycap_server.utils.EOrderStatus;
+import com.vn.keycap_server.utils.EPaymentStatus;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -200,6 +201,7 @@ public class OrderService implements IOrderService {
                                 .address(address)
                                 .totalAmount(totalAmount)
                                 .status(EOrderStatus.PENDING)
+                                .paymentStatus(EPaymentStatus.PENDING)
                                 .paymentMethod(request.getPaymentMethod())
                                 .build();
                 orderRepository.save(order);
@@ -241,7 +243,7 @@ public class OrderService implements IOrderService {
                 return CheckoutResult.builder()
                                 .orderId(order.getId())
                                 .paymentMethod(order.getPaymentMethod())
-                                .paymentStatus(order.getStatus())
+                                .paymentStatus(order.getPaymentStatus())
                                 .build();
         }
 
