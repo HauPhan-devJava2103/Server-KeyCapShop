@@ -13,4 +13,4 @@ public class VNPayProperties {
     private String hashSecret;
     private String apiUrl;
     private String redirectUrl;
-} 
+}

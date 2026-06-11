@@ -74,6 +74,7 @@ vnpay:
   hash-secret: ${VNPAY_HASH_SECRET}
   api-url: ${VNPAY_API_URL}
   redirect-url: ${VNPAY_REDIRECT_URL}
+  ipn-url: ${VNPAY_IPN_URL}
 
 shipping:
   ghn:

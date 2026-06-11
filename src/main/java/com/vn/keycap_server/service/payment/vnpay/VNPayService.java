@@ -5,7 +5,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TimeZone;
@@ -41,13 +40,13 @@ public class VNPayService implements IVNPayService {
         // 1. Build Params
         String vnp_Version = "2.1.0";
         String vnp_Command = "pay";
-        String vnp_OrderInfo = "Thanh toan don hang KeyCap #" + order.getId();
+        String vnp_OrderInfo = "KeyCapShop-Order #" + order.getId();
         String vnp_OrderType = "other"; // Loại danh mục hàng hóa
         String vnp_TxnRef = "KEYCAP_" + order.getId() + "_" + System.currentTimeMillis();
-        String returnUrl = vnPayProperties.getRedirectUrl() + "?orderId=" + order.getId(); // Redirect URL Frontend
-
+        String vnp_ReturnUrl = vnPayProperties.getRedirectUrl() + "?orderId=" + order.getId();
         // Amount * 100
         long amount = order.getTotalAmount().multiply(new BigDecimal(100)).longValue();
+
         Map<String, String> vnpParams = new TreeMap<>();
         vnpParams.put("vnp_Version", vnp_Version);
         vnpParams.put("vnp_Command", vnp_Command);
@@ -58,10 +57,10 @@ public class VNPayService implements IVNPayService {
         vnpParams.put("vnp_OrderInfo", vnp_OrderInfo);
         vnpParams.put("vnp_OrderType", vnp_OrderType);
         vnpParams.put("vnp_Locale", "vn");
-        vnpParams.put("vnp_ReturnUrl", returnUrl);
+        vnpParams.put("vnp_ReturnUrl", vnp_ReturnUrl);
         vnpParams.put("vnp_IpAddr", clientIpAddress);
 
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
         String vnp_CreateDate = formatter.format(cld.getTime());
         vnpParams.put("vnp_CreateDate", vnp_CreateDate);
@@ -74,28 +73,27 @@ public class VNPayService implements IVNPayService {
         // 2. Build Hash Data (URL-encoded values) và Query String (URL-encoded)
         StringBuilder hashData = new StringBuilder();
         StringBuilder query = new StringBuilder();
-        Iterator<Map.Entry<String, String>> itr = vnpParams.entrySet().iterator();
-        while (itr.hasNext()) {
-            Map.Entry<String, String> entry = itr.next();
+
+        for (Map.Entry<String, String> entry : vnpParams.entrySet()) {
             String fieldName = entry.getKey();
             String fieldValue = entry.getValue();
 
             if (fieldValue != null && fieldValue.length() > 0) {
-                // Mấu chốt: Phải URL Encode fieldValue cho cả hashData và query
-                String encodedValue = URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII);
+                // URL Encode fieldValue cho cả hashData và query
+                String encodedValue = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8);
+
+                if (hashData.length() > 0) {
+                    hashData.append('&');
+                    query.append('&');
+                }
 
                 // hashData: Sử dụng encodedValue
                 hashData.append(fieldName).append('=').append(encodedValue);
 
                 // query: Sử dụng key đã encode và encodedValue
-                query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII))
+                query.append(URLEncoder.encode(fieldName, StandardCharsets.UTF_8))
                         .append('=')
                         .append(encodedValue);
-
-                if (itr.hasNext()) {
-                    hashData.append('&');
-                    query.append('&');
-                }
             }
         }
         // 3. HMAC-SHA512 sign
@@ -117,38 +115,35 @@ public class VNPayService implements IVNPayService {
         // 1. Trích xuất mã hash bảo mật từ VNPay gửi sang
         String receivedHash = vnpParams.get("vnp_SecureHash");
 
-        // Loại bỏ các thông tin về chữ ký
-        vnpParams.remove("vnp_SecureHash");
-        vnpParams.remove("vnp_SecureHashType");
+        // 2. Gom và sắp xếp các tham số còn lại theo thứ tự Alphabet
+        SortedMap<String, String> sortedParams = new TreeMap<>();
 
-        // 2. Gom và sắp xếp các tham số còn lại theo thứ tự Alphabet tiêu chuẩn
-        SortedMap<String, String> sortedParams = new TreeMap<>(vnpParams);
+        // CHỈ LỌC lấy những config bắt đầu bằng "vnp_"
+        for (Map.Entry<String, String> entry : vnpParams.entrySet()) {
+            String key = entry.getKey();
+            if (key.startsWith("vnp_") && !key.equals("vnp_SecureHash") && !key.equals("vnp_SecureHashType")) {
+                sortedParams.put(key, entry.getValue());
+            }
+        }
+
         StringBuilder hashData = new StringBuilder();
-        Iterator<Map.Entry<String, String>> itr = sortedParams.entrySet().iterator();
 
-        while (itr.hasNext()) {
-            Map.Entry<String, String> entry = itr.next();
+        for (Map.Entry<String, String> entry : sortedParams.entrySet()) {
             String fieldName = entry.getKey();
             String fieldValue = entry.getValue();
 
             // Chỉ băm các tham số thực sự có giá trị dữ liệu
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                hashData.append(fieldName);
-                hashData.append('=');
-                // Phải URL Encode lại value nhận được trước khi băm
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
-
-                if (itr.hasNext()) {
+                if (hashData.length() > 0) {
                     hashData.append('&');
                 }
+                hashData.append(fieldName);
+                hashData.append('=');
+                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8));
             }
         }
 
-        // Xử lý loại bỏ dấu & thừa ở cuối chuỗi nếu có do bộ lọc rỗng gây ra
         String dataToHash = hashData.toString();
-        if (dataToHash.endsWith("&")) {
-            dataToHash = dataToHash.substring(0, dataToHash.length() - 1);
-        }
 
         // 3. HMAC-SHA512 Verify Signature
         String expectedHash = VnPayEncoder.hmacSHA512(
