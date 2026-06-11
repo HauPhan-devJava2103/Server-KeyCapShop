@@ -44,6 +44,8 @@ public class VNPayService implements IVNPayService {
         String vnp_OrderInfo = "Thanh toan don hang KeyCap #" + order.getId();
         String vnp_OrderType = "other"; // Loại danh mục hàng hóa
         String vnp_TxnRef = "KEYCAP_" + order.getId() + "_" + System.currentTimeMillis();
+        String returnUrl = vnPayProperties.getRedirectUrl() + "?orderId=" + order.getId(); // Redirect URL Frontend
+
         // Amount * 100
         long amount = order.getTotalAmount().multiply(new BigDecimal(100)).longValue();
         Map<String, String> vnpParams = new TreeMap<>();
@@ -56,7 +58,7 @@ public class VNPayService implements IVNPayService {
         vnpParams.put("vnp_OrderInfo", vnp_OrderInfo);
         vnpParams.put("vnp_OrderType", vnp_OrderType);
         vnpParams.put("vnp_Locale", "vn");
-        vnpParams.put("vnp_ReturnUrl", vnPayProperties.getRedirectUrl());
+        vnpParams.put("vnp_ReturnUrl", returnUrl);
         vnpParams.put("vnp_IpAddr", clientIpAddress);
 
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
