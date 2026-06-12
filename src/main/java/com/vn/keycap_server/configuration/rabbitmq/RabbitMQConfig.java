@@ -7,6 +7,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableConfigurationProperties(RabbitMQProperties.class)
 public class RabbitMQConfig {
 
     private final RabbitMQProperties rabbitMQProperties;
@@ -26,7 +28,7 @@ public class RabbitMQConfig {
     @Bean
     public Queue waitQueue() {
         return QueueBuilder.durable(WAIT_QUEUE)
-                .ttl(rabbitMQProperties.getExpiryMinutes())
+                .ttl(rabbitMQProperties.getExpiryMinutes() * 60 * 1000)
                 .deadLetterExchange(DLX_EXCHANGE)
                 .deadLetterRoutingKey(ROUTING_KEY)
                 .build();

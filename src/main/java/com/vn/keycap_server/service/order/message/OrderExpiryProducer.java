@@ -4,7 +4,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 import com.vn.keycap_server.configuration.rabbitmq.RabbitMQConfig;
-import com.vn.keycap_server.controller.AddressController;
 import com.vn.keycap_server.utils.EPaymentMethod;
 
 import lombok.RequiredArgsConstructor;
@@ -15,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class OrderExpiryProducer {
 
-    private final RabbitMQConfig rabbitMQConfig;
-    private final AddressController addressController;
     private final RabbitTemplate rabbitTemplate;
 
     public void sendExpiryCheck(Long orderId, Long userId, EPaymentMethod paymentMethod) {
