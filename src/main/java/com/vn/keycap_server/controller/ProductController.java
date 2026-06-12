@@ -1,5 +1,7 @@
 package com.vn.keycap_server.controller;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -151,6 +153,21 @@ public class ProductController {
                 .success(true)
                 .message("Lấy thông tin bộ lọc thành công")
                 .data(productService.getFilter())
+                .build());
+    }
+
+    /**
+     * GET /products/related?productIds=1&productIds=2&size=10
+     * Mô tả: Lấy tối đa size sản phẩm liên quan đến danh sách sản phẩm đầu vào.
+     */
+    @GetMapping("/related")
+    public ResponseEntity<ApiResponse> getRelatedProducts(
+            @RequestParam List<Long> productIds,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Lấy danh sách sản phẩm liên quan thành công")
+                .data(productService.getRelatedProducts(productIds, size))
                 .build());
     }
 
