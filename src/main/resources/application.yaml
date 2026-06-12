@@ -90,8 +90,8 @@ vnpay:
 paypal:
   client-id: ${PAYPAL_CLIENT_ID}
   client-secret: ${PAYPAL_CLIENT_SECRET}
-  api-url: https://api-m.sandbox.paypal.com
-  redirect-url: http://localhost:5173/order/checkout/result
+  api-url: ${PAYPAL_API_URL}
+  redirect-url: ${PAYPAL_REDIRECT_URI}
 
 shipping:
   ghn:
