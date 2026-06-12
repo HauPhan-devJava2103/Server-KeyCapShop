@@ -488,13 +488,13 @@ public class ProductService implements IProductService {
         public List<ProductCardResponse> getRelatedProducts(List<Long> productIds, int size) {
                 // Bước 1: Validate request để bảo vệ query và giới hạn tải cho database.
                 if (productIds == null || productIds.isEmpty()) {
-                        throw new BadRequestException("productIds khong duoc de trong");
+                        throw new BadRequestException("productIds không được để trống");
                 }
                 if (size < 1 || size > 20) {
-                        throw new BadRequestException("size phai nam trong khoang tu 1 den 20");
+                        throw new BadRequestException("size phải nằm trong khoảng từ 1 - 20");
                 }
                 if (productIds.stream().anyMatch(id -> id == null || id <= 0)) {
-                        throw new BadRequestException("Moi productId phai la so nguyen duong");
+                        throw new BadRequestException("productId phải là số nguyên dương");
                 }
 
                 // Bước 2: Loại ID trùng lặp trước khi tìm các tiêu chí liên quan.
@@ -537,7 +537,8 @@ public class ProductService implements IProductService {
                                                 .name(product.getName())
                                                 .slug(product.getSlug())
                                                 .imageUrl(imageByProductId.get(product.getId()))
-                                                .typeName(product.getType() == null ? null : product.getType().getName())
+                                                .typeName(product.getType() == null ? null
+                                                                : product.getType().getName())
                                                 .categoryId(product.getCategory() == null
                                                                 ? null
                                                                 : product.getCategory().getId())

@@ -8,6 +8,7 @@ import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 
 import com.vn.keycap_server.dto.response.address.AddressResponse;
+import com.vn.keycap_server.dto.response.address.LocationInfoResponse;
 import com.vn.keycap_server.modal.Address;
 
 @Component
@@ -22,22 +23,22 @@ public interface AddressMapper {
     List<AddressResponse> toAddressResponseList(List<Address> addresses);
 
     @Named("toProvince")
-    default AddressResponse.LocationInfo toProvince(Address address) {
-        return new AddressResponse.LocationInfo(
+    default LocationInfoResponse toProvince(Address address) {
+        return new LocationInfoResponse(
                 address.getProvinceCode(),
                 address.getProvinceName());
     }
 
     @Named("toDistrict")
-    default AddressResponse.LocationInfo toDistrict(Address address) {
-        return new AddressResponse.LocationInfo(
+    default LocationInfoResponse toDistrict(Address address) {
+        return new LocationInfoResponse(
                 address.getDistrictCode(),
                 address.getDistrictName());
     }
 
     @Named("toWard")
-    default AddressResponse.LocationInfo toWard(Address address) {
-        return new AddressResponse.LocationInfo(
+    default LocationInfoResponse toWard(Address address) {
+        return new LocationInfoResponse(
                 address.getWardCode(),
                 address.getWardName());
     }
