@@ -83,6 +83,21 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
   List<CartItem> findByUserId(Long userId);
 
   /**
+   * Lấy chi tiết giỏ hàng cùng variant, product và attributes trong một truy vấn
+   * để tránh N+1 query.
+   */
+  @Query("""
+      SELECT DISTINCT c
+      FROM CartItem c
+      JOIN FETCH c.variant v
+      JOIN FETCH v.product
+      LEFT JOIN FETCH v.attributes
+      WHERE c.user.id = :userId
+      ORDER BY c.updatedAt DESC
+      """)
+  List<CartItem> findCartDetailsByUserId(@Param("userId") Long userId);
+
+  /**
    * Xóa CartItem theo userId và variantId.
    */
   void deleteByUserIdAndVariantId(Long userId, Long variantId);

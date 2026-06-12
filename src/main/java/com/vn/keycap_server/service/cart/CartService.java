@@ -2,7 +2,9 @@ package com.vn.keycap_server.service.cart;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
@@ -13,12 +15,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.vn.keycap_server.dto.request.cart.CartItemRequest;
 import com.vn.keycap_server.dto.response.cart.CartCountResponse;
+import com.vn.keycap_server.dto.response.cart.CartDetailResponse;
+import com.vn.keycap_server.dto.response.cart.CartItemDetailResponse;
+import com.vn.keycap_server.dto.response.cart.CartProductResponse;
+import com.vn.keycap_server.dto.response.cart.CartSummaryResponse;
+import com.vn.keycap_server.dto.response.cart.CartVariantResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.exception.ResourceNotFoundException;
 import com.vn.keycap_server.exception.UnauthorizedException;
 import com.vn.keycap_server.modal.CartItem;
 import com.vn.keycap_server.modal.ProductVariant;
+import com.vn.keycap_server.modal.ProductImage;
+import com.vn.keycap_server.modal.ProductVariantAttribute;
 import com.vn.keycap_server.repository.CartItemRepository;
+import com.vn.keycap_server.repository.ProductImageRepository;
 import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.utils.EProductStatus;
 
@@ -35,6 +45,94 @@ public class CartService implements ICartService {
 
     private final CartItemRepository cartItemRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final ProductImageRepository productImageRepository;
+
+    /**
+     * Lấy chi tiết giỏ hàng của user, bao gồm product, variant, attributes và
+     * summary.
+     *
+     * @param userId ID của user đang đăng nhập
+     * @return chi tiết giỏ hàng; giỏ rỗng trả items rỗng và summary bằng 0
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public CartDetailResponse getCart(Long userId) {
+        // B1: Lấy cart item cùng product, variant và attributes trong một query.
+        List<CartItem> cartItems = cartItemRepository.findCartDetailsByUserId(userId);
+
+        // B2: Trả response rỗng đúng contract FE nếu user chưa có item.
+        if (cartItems.isEmpty()) {
+            return CartDetailResponse.builder()
+                    .items(Collections.emptyList())
+                    .summary(CartSummaryResponse.builder()
+                            .total(BigDecimal.ZERO)
+                            .cartCount(0)
+                            .build())
+                    .build();
+        }
+
+        // B3: Batch load ảnh của các product để tránh N+1 query.
+        List<Long> productIds = cartItems.stream()
+                .map(item -> item.getVariant().getProduct().getId())
+                .distinct()
+                .toList();
+        Map<Long, String> displayImageByProductId = productImageRepository.findDisplayImagesByProductIds(productIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        image -> image.getProduct().getId(),
+                        ProductImage::getUrl,
+                        (first, ignored) -> first,
+                        LinkedHashMap::new));
+
+        // B4: Map từng cart item và tính summary trong cùng một lần duyệt.
+        int cartCount = 0;
+        BigDecimal total = BigDecimal.ZERO;
+        List<CartItemDetailResponse> items = new java.util.ArrayList<>(cartItems.size());
+
+        for (CartItem cartItem : cartItems) {
+            ProductVariant variant = cartItem.getVariant();
+            int quantity = cartItem.getQuantity();
+            cartCount += quantity;
+            total = total.add(variant.getPrice().multiply(BigDecimal.valueOf(quantity)));
+
+            // Nếu dữ liệu cũ có attribute trùng tên, ưu tiên giá trị đầu tiên.
+            Map<String, String> attributes = variant.getAttributes() == null
+                    ? Collections.emptyMap()
+                    : variant.getAttributes().stream().collect(Collectors.toMap(
+                            ProductVariantAttribute::getName,
+                            ProductVariantAttribute::getValue,
+                            (first, ignored) -> first,
+                            LinkedHashMap::new));
+
+            items.add(CartItemDetailResponse.builder()
+                    .id(cartItem.getId())
+                    .product(CartProductResponse.builder()
+                            .id(variant.getProduct().getId())
+                            .name(variant.getProduct().getName())
+                            .slug(variant.getProduct().getSlug())
+                            .imageUrl(displayImageByProductId.get(variant.getProduct().getId()))
+                            .build())
+                    .variant(CartVariantResponse.builder()
+                            .id(variant.getId())
+                            .attributes(attributes)
+                            .price(variant.getPrice())
+                            .originalPrice(variant.getOriginalPrice())
+                            .percentDiscount(variant.getPercentDiscount())
+                            .quantity(quantity)
+                            .stockQuantity(variant.getStockQuantity())
+                            .build())
+                    .build());
+        }
+
+        // B5: Đóng gói items và summary theo CartDetailModel của FE.
+        return CartDetailResponse.builder()
+                .items(items)
+                .summary(CartSummaryResponse.builder()
+                        .total(total)
+                        .cartCount(cartCount)
+                        .build())
+                .build();
+    }
 
     /**
      * Lấy thông tin tóm tắt về số lượng sản phẩm hiện có trong giỏ hàng của người
