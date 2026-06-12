@@ -443,7 +443,7 @@ public class ProductService implements IProductService {
         public FilterModelResponse getFilter() {
                 List<FilterItemResponse> categories = categoryRepository.findAll().stream()
                                 .map(c -> FilterItemResponse.builder()
-                                                .id(c.getId().toString())
+                                                .id(c.getId())
                                                 .name(c.getName())
                                                 .slug(c.getSlug())
                                                 .build())
@@ -451,7 +451,7 @@ public class ProductService implements IProductService {
 
                 List<FilterItemResponse> types = typeRepository.findAll().stream()
                                 .map(t -> FilterItemResponse.builder()
-                                                .id(t.getId().toString())
+                                                .id(t.getId())
                                                 .name(t.getName())
                                                 .slug(t.getSlug())
                                                 .build())
@@ -459,7 +459,7 @@ public class ProductService implements IProductService {
 
                 List<FilterItemResponse> brands = brandRepository.findAll().stream()
                                 .map(b -> FilterItemResponse.builder()
-                                                .id(b.getId().toString())
+                                                .id(b.getId())
                                                 .name(b.getName())
                                                 .slug(b.getSlug())
                                                 .build())

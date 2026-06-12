@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReviewResponse {
-    private String id;
+    private Long id;
     private UserReviewInfo user;
     private Integer rating;
     private String content;

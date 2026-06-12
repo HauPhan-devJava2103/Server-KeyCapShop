@@ -29,4 +29,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
                         "GROUP BY oi.variant.product.brand.id " +
                         "ORDER BY SUM(oi.quantity) DESC")
         List<Long> findTopSellingBrandIds(Pageable pageable);
+
+        @Query("SELECT oi FROM OrderItem oi JOIN FETCH oi.variant WHERE oi.order.id = :orderId")
+        List<OrderItem> findByOrderId(@Param("orderId") Long orderId);
 }

@@ -1,11 +1,15 @@
 package com.vn.keycap_server.service.mail;
 
+import java.math.BigDecimal;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+
+import com.vn.keycap_server.utils.EPaymentMethod;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -42,6 +46,32 @@ public class MailService implements IMailService {
             throw new RuntimeException("Gửi email thất bại", e);
         }
 
+        mailSender.send(message);
+    }
+
+    @Override
+    public void sendOrderConfirmation(String toEmail, Long orderId, BigDecimal totalAmount,
+            EPaymentMethod paymentMethod) {
+
+        Context context = new Context();
+        context.setVariable("orderId", orderId);
+        context.setVariable("totalAmount", totalAmount);
+        context.setVariable("paymentMethod", paymentMethod);
+
+        String processHTML = templateEngine.process("order-confirmation", context);
+
+        MimeMessage message = mailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("KeyCap Shop - Xác nhận đơn hàng #" + orderId);
+            helper.setText(processHTML, true);
+
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Gửi email xác nhận đơn hàng thất bại", e);
+        }
         mailSender.send(message);
     }
 }

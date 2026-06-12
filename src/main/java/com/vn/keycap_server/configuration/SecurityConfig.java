@@ -39,6 +39,8 @@ public class SecurityConfig {
         // 1. Cấu hình các đường dẫn được public và bị khóa
         httpSecurity.authorizeHttpRequests(request -> request
                 .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/payment/momo/ipn").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/payment/vnpay/ipn").permitAll()
                 .requestMatchers(HttpMethod.GET, "/products/**", "/reviews").permitAll()
                 .anyRequest().authenticated());
 

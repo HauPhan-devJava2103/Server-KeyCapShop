@@ -1,0 +1,243 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Xác nhận đơn hàng</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f3f4f6;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1f2937;
+    ">
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      style="background-color: #f3f4f6; padding: 32px 16px">
+      <tr>
+        <td align="center">
+          <table
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              width: 100%;
+              max-width: 600px;
+              background-color: #ffffff;
+              border-collapse: collapse;
+              border: 1px solid #e5e7eb;
+            ">
+            <!-- Header -->
+            <tr>
+              <td style="padding: 28px 32px; border-bottom: 1px solid #e5e7eb">
+                <h1
+                  style="
+                    margin: 0;
+                    font-size: 24px;
+                    line-height: 32px;
+                    color: #111827;
+                    font-weight: 700;
+                  ">
+                  KeyCap Shop
+                </h1>
+                <p
+                  style="
+                    margin: 6px 0 0;
+                    font-size: 14px;
+                    line-height: 20px;
+                    color: #6b7280;
+                  ">
+                  Xác nhận đơn hàng
+                </p>
+              </td>
+            </tr>
+
+            <!-- Main content -->
+            <tr>
+              <td style="padding: 32px">
+                <h2
+                  style="
+                    margin: 0 0 12px;
+                    font-size: 22px;
+                    line-height: 30px;
+                    color: #111827;
+                    font-weight: 700;
+                  ">
+                  Đặt hàng thành công
+                </h2>
+
+                <p
+                  style="
+                    margin: 0 0 24px;
+                    font-size: 15px;
+                    line-height: 24px;
+                    color: #4b5563;
+                  ">
+                  Cảm ơn bạn đã mua sắm tại <strong>KeyCap Shop</strong>. Chúng
+                  tôi đã ghi nhận đơn hàng của bạn và sẽ tiến hành xử lý trong
+                  thời gian sớm nhất.
+                </p>
+
+                <!-- Order summary -->
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="
+                    border-collapse: collapse;
+                    margin: 0 0 24px;
+                    border: 1px solid #e5e7eb;
+                  ">
+                  <tr>
+                    <td
+                      colspan="2"
+                      style="
+                        padding: 14px 16px;
+                        background-color: #f9fafb;
+                        border-bottom: 1px solid #e5e7eb;
+                      ">
+                      <strong style="font-size: 14px; color: #111827"
+                        >Thông tin đơn hàng</strong
+                      >
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td
+                      style="
+                        width: 40%;
+                        padding: 14px 16px;
+                        border-bottom: 1px solid #e5e7eb;
+                        font-size: 14px;
+                        color: #6b7280;
+                      ">
+                      Mã đơn hàng
+                    </td>
+                    <td
+                      style="
+                        padding: 14px 16px;
+                        border-bottom: 1px solid #e5e7eb;
+                        font-size: 14px;
+                        color: #111827;
+                        font-weight: 700;
+                      ">
+                      #<span th:text="${orderId}"></span>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td
+                      style="
+                        width: 40%;
+                        padding: 14px 16px;
+                        border-bottom: 1px solid #e5e7eb;
+                        font-size: 14px;
+                        color: #6b7280;
+                      ">
+                      Tổng tiền
+                    </td>
+                    <td
+                      style="
+                        padding: 14px 16px;
+                        border-bottom: 1px solid #e5e7eb;
+                        font-size: 14px;
+                        color: #111827;
+                        font-weight: 700;
+                      ">
+                      <span
+                        th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT')}"></span
+                      >₫
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td
+                      style="
+                        width: 40%;
+                        padding: 14px 16px;
+                        font-size: 14px;
+                        color: #6b7280;
+                      ">
+                      Phương thức thanh toán
+                    </td>
+                    <td
+                      style="
+                        padding: 14px 16px;
+                        font-size: 14px;
+                        color: #111827;
+                      "
+                      th:text="${paymentMethod}"></td>
+                  </tr>
+                </table>
+
+                <!-- Status box -->
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="
+                    border-collapse: collapse;
+                    margin: 0 0 24px;
+                    background-color: #f9fafb;
+                    border-left: 4px solid #111827;
+                  ">
+                  <tr>
+                    <td style="padding: 16px">
+                      <p
+                        style="
+                          margin: 0;
+                          font-size: 14px;
+                          line-height: 22px;
+                          color: #374151;
+                        ">
+                        Đơn hàng của bạn đang được xử lý. Chúng tôi sẽ thông báo
+                        khi đơn hàng được xác nhận, đóng gói và bàn giao cho đơn
+                        vị vận chuyển.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 14px;
+                    line-height: 22px;
+                    color: #4b5563;
+                  ">
+                  Trân trọng,<br />
+                  <strong>Đội ngũ KeyCap Shop</strong>
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td
+                style="
+                  padding: 20px 32px;
+                  background-color: #f9fafb;
+                  border-top: 1px solid #e5e7eb;
+                ">
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 12px;
+                    line-height: 18px;
+                    color: #6b7280;
+                    text-align: center;
+                  ">
+                  Email này được gửi tự động từ hệ thống KeyCap Shop. Vui lòng
+                  không trả lời trực tiếp email này.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
