@@ -32,9 +32,11 @@ import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.OrderRepository;
 import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.repository.UserRepository;
+import com.vn.keycap_server.service.order.message.OrderExpiryProducer;
 import com.vn.keycap_server.service.payment.IPaymentStrategy;
 import com.vn.keycap_server.service.shipping.GhnShippingService;
 import com.vn.keycap_server.utils.EOrderStatus;
+import com.vn.keycap_server.utils.EPaymentMethod;
 import com.vn.keycap_server.utils.EPaymentStatus;
 
 import jakarta.transaction.Transactional;
@@ -54,6 +56,8 @@ public class OrderService implements IOrderService {
         private final GhnShippingService ghnShippingService;
 
         private final List<IPaymentStrategy> paymentStrategies;
+
+        private final OrderExpiryProducer orderExpiryProducer;
 
         @Override
         public PrepareCheckoutResponse prepareOrder(PrepareCheckoutRequestWrapper request, Long userId) {
@@ -233,6 +237,14 @@ public class OrderService implements IOrderService {
                                                 "Phương thức thanh toán " + request.getPaymentMethod()
                                                                 + " chưa được hỗ trợ!"));
                 CheckoutResponse response = selectedStrategy.processPayment(order, userId);
+
+                if (request.getPaymentMethod() != EPaymentMethod.COD) {
+                        orderExpiryProducer.sendExpiryCheck(
+                                        order.getId(),
+                                        userId,
+                                        request.getPaymentMethod());
+                }
+
                 return response;
         }
 

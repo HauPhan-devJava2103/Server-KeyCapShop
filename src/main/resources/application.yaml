@@ -15,6 +15,12 @@ spring:
     redis:
       host: localhost
       port: 6379
+    # RabbitMQ Config
+    rabbitmq:
+      host: localhost
+      port: 5672
+      username: guest
+      password: guest
 
   # Mail Config (Gmail SMTP)
   mail:
@@ -74,7 +80,6 @@ vnpay:
   hash-secret: ${VNPAY_HASH_SECRET}
   api-url: ${VNPAY_API_URL}
   redirect-url: ${VNPAY_REDIRECT_URL}
-  ipn-url: ${VNPAY_IPN_URL}
 
 shipping:
   ghn:
@@ -83,3 +88,7 @@ shipping:
     api-url: ${GHN_API_URL}
     from-district-id: ${GHN_FROM_DISTRICT_ID}
     from-ward-code: ${GHN_FROM_WARD_CODE}
+
+order:
+  payment:
+    expiry-minutes: 15
