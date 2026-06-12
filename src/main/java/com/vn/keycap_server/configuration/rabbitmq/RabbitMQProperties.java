@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@ConfigurationProperties(prefix = "order")
+@ConfigurationProperties(prefix = "order.payment")
 public class RabbitMQProperties {
 
     private int expiryMinutes;

@@ -55,6 +55,12 @@ spring:
           momo-client:
             connect-timeout: 10000
             read-timeout: 30000
+          paypal-auth-client:
+            connect-timeout: 10000
+            read-timeout: 30000
+          paypal-order-client:
+            connect-timeout: 10000
+            read-timeout: 30000
 
 jwt:
   signerKey: ${JWT_SIGNER_KEY}
@@ -80,6 +86,12 @@ vnpay:
   hash-secret: ${VNPAY_HASH_SECRET}
   api-url: ${VNPAY_API_URL}
   redirect-url: ${VNPAY_REDIRECT_URL}
+
+paypal:
+  client-id: ${PAYPAL_CLIENT_ID}
+  client-secret: ${PAYPAL_CLIENT_SECRET}
+  api-url: ${PAYPAL_API_URL}
+  redirect-url: ${PAYPAL_REDIRECT_URI}
 
 shipping:
   ghn:
