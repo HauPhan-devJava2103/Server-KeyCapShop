@@ -21,9 +21,9 @@ import lombok.Setter;
 @Table(name = "addresses")
 public class Address extends AbstractEntity {
 
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
-    @Column(name = "phone", nullable = false)
+    @Column(name = "recipient_name", nullable = false)
+    private String recipientName;
+    @Column(name = "phone_number", nullable = false)
     private String phone;
     // Province
     @Column(name = "province_code", nullable = false)
