@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.vn.keycap_server.dto.request.order.CancelOrderRequest;
 import com.vn.keycap_server.dto.request.order.CheckoutItemRequest;
 import com.vn.keycap_server.dto.request.order.CheckoutRequest;
 import com.vn.keycap_server.dto.request.order.PrepareCheckoutRequestWrapper;
@@ -25,6 +26,7 @@ import com.vn.keycap_server.mapper.OrderMapper;
 import com.vn.keycap_server.modal.Address;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.modal.OrderItem;
+import com.vn.keycap_server.modal.OrderStatusHistory;
 import com.vn.keycap_server.modal.ProductImage;
 import com.vn.keycap_server.modal.ProductVariant;
 import com.vn.keycap_server.modal.ProductVariantAttribute;
@@ -33,6 +35,7 @@ import com.vn.keycap_server.repository.AddressRepository;
 import com.vn.keycap_server.repository.CartItemRepository;
 import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.OrderRepository;
+import com.vn.keycap_server.repository.OrderStatusHistoryRepository;
 import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.service.order.message.OrderExpiryProducer;
@@ -54,6 +57,7 @@ public class OrderService implements IOrderService {
         private final OrderRepository orderRepository;
         private final OrderItemRepository orderItemRepository;
         private final CartItemRepository cartItemRepository;
+        private final OrderStatusHistoryRepository orderStatusHistoryRepository;
 
         private final GhnShippingService ghnShippingService;
 
@@ -278,6 +282,51 @@ public class OrderService implements IOrderService {
                 }
 
                 return orderMapper.toOrderResponseList(orders);
+
+        }
+
+        @Override
+        public OrderResponse getOrderDetail(Long orderId, Long userId) {
+                Order order = orderRepository.findById(orderId)
+                                .orElseThrow(() -> new BadRequestException("Đơn hàng không tồn tại"));
+                if (!order.getUser().getId().equals(userId)) {
+                        throw new BadRequestException("Đơn hàng không thuộc người dùng này");
+                }
+                return orderMapper.toOrderResponse(order);
+
+        }
+
+        @Override
+        public void cancelOrder(Long orderId, Long userId, CancelOrderRequest request) {
+
+                Order order = orderRepository.findById(orderId)
+                                .orElseThrow(() -> new BadRequestException("Đơn hàng không tồn tại"));
+                if (!order.getUser().getId().equals(userId)) {
+                        throw new BadRequestException("Đơn hàng không thuộc người dùng này");
+                }
+                if (order.getStatus() != EOrderStatus.PENDING) {
+                        throw new BadRequestException("Chỉ có thể hủy đơn hàng ở trạng thái chờ xác nhận");
+                }
+
+                EOrderStatus fromStatus = order.getStatus();
+                order.setStatus(EOrderStatus.CANCELLED);
+                order.setPaymentStatus(EPaymentStatus.FAILED);
+                orderRepository.save(order);
+
+                OrderStatusHistory history = new OrderStatusHistory();
+                history.setOrder(order);
+                history.setFromStatus(fromStatus);
+                history.setToStatus(EOrderStatus.CANCELLED);
+                history.setNote(request.getReason());
+                history.setCreatedBy(userId);
+                orderStatusHistoryRepository.save(history);
+
+                // Restock Item
+                for (OrderItem item : order.getItems()) {
+                        ProductVariant variant = item.getVariant();
+                        item.setQuantity(variant.getStockQuantity() + item.getQuantity());
+                }
+                productVariantRepository.saveAll(order.getItems().stream().map(OrderItem::getVariant).toList());
 
         }
 

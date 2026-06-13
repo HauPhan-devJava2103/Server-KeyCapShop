@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vn.keycap_server.dto.ApiResponse;
+import com.vn.keycap_server.dto.request.order.CancelOrderRequest;
 import com.vn.keycap_server.dto.request.order.CheckoutRequest;
 import com.vn.keycap_server.dto.request.order.PrepareCheckoutRequestWrapper;
 import com.vn.keycap_server.service.order.IOrderService;
@@ -70,6 +71,29 @@ public class OrderController {
                                 .success(true)
                                 .message("Lấy danh sách trạng thái đơn hàng thành công!")
                                 .data(orderService.getUserOrders(userId, status))
+                                .build());
+        }
+
+        @GetMapping("/{orderId}")
+        public ResponseEntity<ApiResponse> getOrderDetail(@PathVariable Long orderId,
+                        @AuthenticationPrincipal Jwt jwt) {
+                Long userId = jwt.getClaim("userId");
+                return ResponseEntity.ok(ApiResponse.builder()
+                                .success(true)
+                                .message("Lấy thông tin đơn hàng thành công!")
+                                .data(orderService.getOrderDetail(orderId, userId))
+                                .build());
+        }
+
+        @PostMapping("/{orderId}/cancel")
+        public ResponseEntity<ApiResponse> cancelOrder(@PathVariable Long orderId,
+                        @RequestBody CancelOrderRequest request,
+                        @AuthenticationPrincipal Jwt jwt) {
+                Long userId = jwt.getClaim("userId");
+                orderService.cancelOrder(orderId, userId, request);
+                return ResponseEntity.ok(ApiResponse.builder()
+                                .success(true)
+                                .message("Đơn hàng đã được hủy thành công!")
                                 .build());
         }
 
