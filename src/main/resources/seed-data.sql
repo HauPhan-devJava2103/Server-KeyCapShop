@@ -12,6 +12,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DELETE FROM review_images;
 DELETE FROM reviews;
+DELETE FROM order_status_history;
 DELETE FROM order_items;
 DELETE FROM orders;
 DELETE FROM cart_items;
@@ -128,11 +129,11 @@ INSERT INTO product_specifications (id, product_id, name, value, sort_order, cre
 AS new_data ON DUPLICATE KEY UPDATE product_id=new_data.product_id, name=new_data.name, value=new_data.value, sort_order=new_data.sort_order, updated_at=new_data.updated_at;
 
 -- ================== ADDRESSES ==================
--- Entity: Address (id, user_id, full_name, phone, province_code, province_name,
+-- Entity: Address (id, user_id, recipient_name, phone_number, province_code, province_name,
 --                  district_code, district_name, ward_code, ward_name,
 --                  street, full_address, latitude, longitude, is_default, created_at, updated_at)
 -- Mã district_code / ward_code theo GHN API thực tế
-INSERT INTO addresses (id, user_id, full_name, phone,
+INSERT INTO addresses (id, user_id, recipient_name, phone_number,
   province_code, province_name, district_code, district_name,
   ward_code, ward_name, street, full_address,
   latitude, longitude, is_default, created_at, updated_at) VALUES
@@ -146,7 +147,7 @@ INSERT INTO addresses (id, user_id, full_name, phone,
     '20101', 'Phường Bến Nghé', '2 Nguyễn Đình Chiểu',
     '2 Nguyễn Đình Chiểu, Phường Bến Nghé, Quận 1, Hồ Chí Minh',
     10.7769, 106.7009, false, CURRENT_DATE, CURRENT_DATE)
-AS new_data ON DUPLICATE KEY UPDATE full_name=new_data.full_name, phone=new_data.phone,
+AS new_data ON DUPLICATE KEY UPDATE recipient_name=new_data.recipient_name, phone_number=new_data.phone_number,
   province_code=new_data.province_code, province_name=new_data.province_name,
   district_code=new_data.district_code, district_name=new_data.district_name,
   ward_code=new_data.ward_code, ward_name=new_data.ward_name,
@@ -170,31 +171,86 @@ INSERT INTO cart_items (id, user_id, variant_id, quantity, created_at, updated_a
 AS new_data ON DUPLICATE KEY UPDATE quantity=new_data.quantity, updated_at=new_data.updated_at;
 
 -- ================== ORDERS ==================
--- Entity: Order (id, user_id, total_amount, status[PENDING|PREPARING|SHIPPING|SUCCESS|CANCELLED|RETURNED],
---                shipping_address, phone_number, payment_method[COD|MOMO|VNPAY|PAYPAL],
---                transaction_id, address_id, created_at, updated_at)
-INSERT INTO orders (id, user_id, total_amount, status, shipping_address, phone_number,
+-- Entity: Order (id, user_id, total_amount, status, payment_method, payment_status,
+--                shipping_fee, transaction_id, address_id, created_at, updated_at)
+INSERT INTO orders (id, user_id, total_amount, status, shipping_fee, payment_status,
   payment_method, transaction_id, address_id, created_at, updated_at) VALUES
-  (1, 1, 4500000, 'SUCCESS',
-    'Số 1 Xuân Thủy, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội', '0987654321',
+  -- Đơn 1: SUCCESS - COD - đã giao thành công
+  (1, 1, 4530000, 'SUCCESS', 30000, 'PAID',
     'COD', NULL, 1,
-    CURRENT_DATE - INTERVAL 7 DAY, CURRENT_DATE - INTERVAL 5 DAY),
-  (2, 1, 3090000, 'SHIPPING',
-    '2 Nguyễn Đình Chiểu, Phường Bến Nghé, Quận 1, Hồ Chí Minh', '0987654321',
+    CURRENT_DATE - INTERVAL 14 DAY, CURRENT_DATE - INTERVAL 10 DAY),
+  -- Đơn 2: SHIPPING - MOMO - đang giao
+  (2, 1, 3125000, 'SHIPPING', 35000, 'PAID',
     'MOMO', 'MOMO_TXN_123456', 2,
-    CURRENT_DATE - INTERVAL 1 DAY, CURRENT_DATE - INTERVAL 1 DAY)
+    CURRENT_DATE - INTERVAL 3 DAY, CURRENT_DATE - INTERVAL 2 DAY),
+  -- Đơn 3: CONFIRMED - VNPAY - đã xác nhận, chờ chuẩn bị
+  (3, 1, 2535000, 'CONFIRMED', 35000, 'PAID',
+    'VNPAY', 'VNPAY_TXN_789012', 1,
+    CURRENT_DATE - INTERVAL 1 DAY, CURRENT_DATE - INTERVAL 1 DAY),
+  -- Đơn 4: PENDING - COD - chờ xác nhận
+  (4, 1, 1385000, 'PENDING', 35000, 'PENDING',
+    'COD', NULL, 2,
+    CURRENT_DATE, CURRENT_DATE),
+  -- Đơn 5: CANCELLED - MOMO - đã hủy
+  (5, 1, 4500000, 'CANCELLED', 30000, 'FAILED',
+    'MOMO', 'MOMO_TXN_CANCEL_001', 1,
+    CURRENT_DATE - INTERVAL 7 DAY, CURRENT_DATE - INTERVAL 6 DAY),
+  -- Đơn 6: PREPARING - COD - đang chuẩn bị hàng
+  (6, 1, 990000, 'PREPARING', 30000, 'PENDING',
+    'COD', NULL, 1,
+    CURRENT_DATE - INTERVAL 2 DAY, CURRENT_DATE - INTERVAL 1 DAY)
 AS new_data ON DUPLICATE KEY UPDATE status=new_data.status, total_amount=new_data.total_amount,
-  shipping_address=new_data.shipping_address, phone_number=new_data.phone_number,
+  shipping_fee=new_data.shipping_fee, payment_status=new_data.payment_status,
   payment_method=new_data.payment_method, transaction_id=new_data.transaction_id,
   address_id=new_data.address_id, updated_at=new_data.updated_at;
 
 -- ================== ORDER ITEMS ==================
 -- Entity: OrderItem (id, order_id, variant_id, quantity, price, created_at, updated_at)
 INSERT INTO order_items (id, order_id, variant_id, quantity, price, created_at, updated_at) VALUES
-  (1, 1, 1, 1, 4500000, CURRENT_DATE - INTERVAL 7 DAY, CURRENT_DATE - INTERVAL 7 DAY),
-  (2, 2, 3, 1, 2100000, CURRENT_DATE - INTERVAL 1 DAY, CURRENT_DATE - INTERVAL 1 DAY),
-  (3, 2, 8, 1, 990000, CURRENT_DATE - INTERVAL 1 DAY, CURRENT_DATE - INTERVAL 1 DAY)
+  -- Đơn 1 (SUCCESS): Keychron Q1 Pro Black
+  (1, 1, 1, 1, 4500000, CURRENT_DATE - INTERVAL 14 DAY, CURRENT_DATE - INTERVAL 14 DAY),
+  -- Đơn 2 (SHIPPING): Akko 3098B + Keycap Macaw
+  (2, 2, 3, 1, 2100000, CURRENT_DATE - INTERVAL 3 DAY, CURRENT_DATE - INTERVAL 3 DAY),
+  (3, 2, 8, 1, 990000, CURRENT_DATE - INTERVAL 3 DAY, CURRENT_DATE - INTERVAL 3 DAY),
+  -- Đơn 3 (CONFIRMED): KBD67 Lite Kit
+  (4, 3, 7, 1, 2500000, CURRENT_DATE - INTERVAL 1 DAY, CURRENT_DATE - INTERVAL 1 DAY),
+  -- Đơn 4 (PENDING): Gateron Oil King 70pcs + Cherry MX Brown 10pcs
+  (5, 4, 5, 1, 1050000, CURRENT_DATE, CURRENT_DATE),
+  (6, 4, 6, 2, 120000, CURRENT_DATE, CURRENT_DATE),
+  -- Đơn 5 (CANCELLED): Keychron Q1 Pro White
+  (7, 5, 2, 1, 4500000, CURRENT_DATE - INTERVAL 7 DAY, CURRENT_DATE - INTERVAL 7 DAY),
+  -- Đơn 6 (PREPARING): Keycap Macaw
+  (8, 6, 8, 1, 990000, CURRENT_DATE - INTERVAL 2 DAY, CURRENT_DATE - INTERVAL 2 DAY)
 AS new_data ON DUPLICATE KEY UPDATE quantity=new_data.quantity, price=new_data.price, updated_at=new_data.updated_at;
+
+-- ================== ORDER STATUS HISTORY ==================
+-- Entity: OrderStatusHistory (id, order_id, from_status, to_status, note, created_by, created_at)
+INSERT INTO order_status_history (id, order_id, from_status, to_status, note, created_by, created_at) VALUES
+  -- Đơn 1: PENDING -> CONFIRMED -> PREPARING -> SHIPPING -> SUCCESS
+  (1, 1, NULL, 'PENDING', 'Đơn hàng được tạo', 1, CURRENT_DATE - INTERVAL 14 DAY),
+  (2, 1, 'PENDING', 'CONFIRMED', 'Xác nhận đơn COD', 1, CURRENT_DATE - INTERVAL 13 DAY),
+  (3, 1, 'CONFIRMED', 'PREPARING', 'Đang chuẩn bị hàng', NULL, CURRENT_DATE - INTERVAL 12 DAY),
+  (4, 1, 'PREPARING', 'SHIPPING', 'Đã giao cho vận chuyển', NULL, CURRENT_DATE - INTERVAL 11 DAY),
+  (5, 1, 'SHIPPING', 'SUCCESS', 'Giao hàng thành công', NULL, CURRENT_DATE - INTERVAL 10 DAY),
+  -- Đơn 2: PENDING -> CONFIRMED -> PREPARING -> SHIPPING
+  (6, 2, NULL, 'PENDING', 'Đơn hàng được tạo', 1, CURRENT_DATE - INTERVAL 3 DAY),
+  (7, 2, 'PENDING', 'CONFIRMED', 'Thanh toán MoMo thành công', 1, CURRENT_DATE - INTERVAL 3 DAY),
+  (8, 2, 'CONFIRMED', 'PREPARING', 'Đang chuẩn bị hàng', NULL, CURRENT_DATE - INTERVAL 2 DAY),
+  (9, 2, 'PREPARING', 'SHIPPING', 'Đã giao cho vận chuyển', NULL, CURRENT_DATE - INTERVAL 2 DAY),
+  -- Đơn 3: PENDING -> CONFIRMED
+  (10, 3, NULL, 'PENDING', 'Đơn hàng được tạo', 1, CURRENT_DATE - INTERVAL 1 DAY),
+  (11, 3, 'PENDING', 'CONFIRMED', 'Thanh toán VNPay thành công', 1, CURRENT_DATE - INTERVAL 1 DAY),
+  -- Đơn 4: PENDING
+  (12, 4, NULL, 'PENDING', 'Đơn hàng COD mới tạo', 1, CURRENT_DATE),
+  -- Đơn 5: PENDING -> CANCELLED
+  (13, 5, NULL, 'PENDING', 'Đơn hàng được tạo', 1, CURRENT_DATE - INTERVAL 7 DAY),
+  (14, 5, 'PENDING', 'CANCELLED', 'Thanh toán MoMo thất bại, hủy đơn', NULL, CURRENT_DATE - INTERVAL 6 DAY),
+  -- Đơn 6: PENDING -> CONFIRMED -> PREPARING
+  (15, 6, NULL, 'PENDING', 'Đơn hàng được tạo', 1, CURRENT_DATE - INTERVAL 2 DAY),
+  (16, 6, 'PENDING', 'CONFIRMED', 'Xác nhận đơn COD', 1, CURRENT_DATE - INTERVAL 2 DAY),
+  (17, 6, 'CONFIRMED', 'PREPARING', 'Đang chuẩn bị hàng', NULL, CURRENT_DATE - INTERVAL 1 DAY)
+AS new_data ON DUPLICATE KEY UPDATE from_status=new_data.from_status, to_status=new_data.to_status,
+  note=new_data.note, created_by=new_data.created_by, created_at=new_data.created_at;
 
 -- ================== REVIEWS ==================
 -- Entity: Review (id, product_id, user_id, rating, content, created_at, updated_at)

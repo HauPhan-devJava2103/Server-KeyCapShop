@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vn.keycap_server.dto.ApiResponse;
@@ -57,6 +58,18 @@ public class OrderController {
                                 .success(true)
                                 .message("Lấy trạng thái thanh toán thành công!")
                                 .data(orderService.getPaymentStatus(orderId))
+                                .build());
+        }
+
+        @GetMapping("/my-orders")
+        public ResponseEntity<ApiResponse> getUserOrders(
+                        @AuthenticationPrincipal Jwt jwt,
+                        @RequestParam(required = false) String status) {
+                Long userId = jwt.getClaim("userId");
+                return ResponseEntity.ok(ApiResponse.builder()
+                                .success(true)
+                                .message("Lấy danh sách trạng thái đơn hàng thành công!")
+                                .data(orderService.getUserOrders(userId, status))
                                 .build());
         }
 

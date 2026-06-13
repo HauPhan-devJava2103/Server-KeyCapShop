@@ -8,6 +8,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.vn.keycap_server.dto.request.order.CheckoutItemRequest;
 import com.vn.keycap_server.dto.request.order.CheckoutRequest;
@@ -17,8 +18,10 @@ import com.vn.keycap_server.dto.response.order.CheckoutItemResponse;
 import com.vn.keycap_server.dto.response.order.CheckoutItemResponse.PrepareProductInfo;
 import com.vn.keycap_server.dto.response.order.CheckoutResponse;
 import com.vn.keycap_server.dto.response.order.CheckoutResult;
+import com.vn.keycap_server.dto.response.order.OrderResponse;
 import com.vn.keycap_server.dto.response.order.PrepareCheckoutResponse;
 import com.vn.keycap_server.exception.BadRequestException;
+import com.vn.keycap_server.mapper.OrderMapper;
 import com.vn.keycap_server.modal.Address;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.modal.OrderItem;
@@ -39,7 +42,6 @@ import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentMethod;
 import com.vn.keycap_server.utils.EPaymentStatus;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -58,6 +60,8 @@ public class OrderService implements IOrderService {
         private final List<IPaymentStrategy> paymentStrategies;
 
         private final OrderExpiryProducer orderExpiryProducer;
+
+        private final OrderMapper orderMapper;
 
         @Override
         public PrepareCheckoutResponse prepareOrder(PrepareCheckoutRequestWrapper request, Long userId) {
@@ -205,6 +209,7 @@ public class OrderService implements IOrderService {
                                 .address(address)
                                 .totalAmount(totalAmount)
                                 .status(EOrderStatus.PENDING)
+                                .shippingFee(shippingFee)
                                 .paymentStatus(EPaymentStatus.PENDING)
                                 .paymentMethod(request.getPaymentMethod())
                                 .build();
@@ -257,6 +262,23 @@ public class OrderService implements IOrderService {
                                 .paymentMethod(order.getPaymentMethod())
                                 .paymentStatus(order.getPaymentStatus())
                                 .build();
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<OrderResponse> getUserOrders(Long userId, String status) {
+                List<Order> orders;
+                if (status == null || status.isEmpty()) {
+                        orders = orderRepository.findByUserIdAndStatusInOrderByCreatedAtDesc(userId,
+                                        List.of(EOrderStatus.PENDING, EOrderStatus.PREPARING, EOrderStatus.SHIPPING));
+
+                } else {
+                        EOrderStatus orderStatus = EOrderStatus.valueOf(status.toUpperCase());
+                        orders = orderRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, orderStatus);
+                }
+
+                return orderMapper.toOrderResponseList(orders);
+
         }
 
 }
