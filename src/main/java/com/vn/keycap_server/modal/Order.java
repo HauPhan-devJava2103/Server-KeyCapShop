@@ -46,7 +46,7 @@ public class Order extends AbstractEntity {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
-    // Trạng thái đơn hàng (ví dụ: PENDING, SHIPPING, DELIVERED, CANCELLED)
+    // Trạng thái đơn hàng (ví dụ: PENDING, CONFIRMED, PREPARING, SHIPPING, SUCCESS, CANCELLED)
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private EOrderStatus status;
