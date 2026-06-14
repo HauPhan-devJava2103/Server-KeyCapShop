@@ -16,12 +16,13 @@ public interface UserMapper {
     @Mapping(target = "dateOfBirth", ignore = true)
     @Mapping(target = "gender", ignore = true)
     @Mapping(target = "phone", ignore = true)
-    @Mapping(target = "avatarUrl", ignore = true)
+    @Mapping(target = "avatarMedia", ignore = true)
     @Mapping(target = "role", ignore = true)
     @Mapping(target = "tokens", ignore = true)
+    @Mapping(target = "addresses", ignore = true)
     User registerRequestToUser(RegisterRequest request);
 
-    @Mapping(target = "avatar", source = "avatarUrl")
+    @Mapping(target = "avatar", source = "avatarMedia.secureUrl")
     UserResponse toUserResponse(User user);
 
     @Named("emailToFullName")
