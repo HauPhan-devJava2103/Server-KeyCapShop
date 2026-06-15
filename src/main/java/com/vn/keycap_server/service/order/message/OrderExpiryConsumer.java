@@ -14,6 +14,7 @@ import com.vn.keycap_server.repository.OrderRepository;
 import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentStatus;
+import com.vn.keycap_server.service.order.OrderService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class OrderExpiryConsumer {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final OrderService orderService;
 
     @RabbitListener(queues = RabbitMQConfig.CHECK_QUEUE)
     @Transactional
@@ -59,6 +61,11 @@ public class OrderExpiryConsumer {
         order.setStatus(EOrderStatus.CANCELLED);
         order.setPaymentStatus(EPaymentStatus.FAILED);
         orderRepository.save(order);
+
+        // Ghi lịch sử: PENDING -> CANCELLED (hết hạn thanh toán)
+        orderService.recordStatusChange(order, EOrderStatus.PENDING,
+                EOrderStatus.CANCELLED,
+                "Hết hạn thanh toán, tự động hủy đơn hàng", null);
 
         log.info("Order #{} đã hủy tự động. Stock hoàn trả cho {} sản phẩm.",
                 orderId, orderItems.size());

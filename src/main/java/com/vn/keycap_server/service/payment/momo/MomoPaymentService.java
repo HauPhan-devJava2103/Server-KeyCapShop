@@ -13,6 +13,7 @@ import com.vn.keycap_server.dto.response.payment.momo.MomoCreateResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.repository.OrderRepository;
+import com.vn.keycap_server.service.order.OrderService;
 import com.vn.keycap_server.service.order.event.OrderCompletedEvent;
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentStatus;
@@ -27,6 +28,7 @@ public class MomoPaymentService implements IMomoPaymentService {
     private final MomoFeignClient momoFeignClient;
     private final MomoProperties momoProperties;
     private final OrderRepository orderRepository;
+    private final OrderService orderService;
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -115,9 +117,16 @@ public class MomoPaymentService implements IMomoPaymentService {
             order.setStatus(EOrderStatus.CONFIRMED);
             order.setTransactionId(String.valueOf(ipn.getTransId()));
             eventPublisher.publishEvent(new OrderCompletedEvent(this, order.getId(), order.getUser().getId()));
+            // Ghi lịch sử: PENDING -> CONFIRMED
+            orderService.recordStatusChange(order, EOrderStatus.PENDING,
+                    EOrderStatus.CONFIRMED, "Thanh toán MoMo thành công", null);
         } else {
             order.setPaymentStatus(EPaymentStatus.FAILED);
             order.setStatus(EOrderStatus.CANCELLED);
+            // Ghi lịch sử: PENDING -> CANCELLED
+            orderService.recordStatusChange(order, EOrderStatus.PENDING,
+                    EOrderStatus.CANCELLED,
+                    "Thanh toán MoMo thất bại", null);
         }
         orderRepository.save(order);
     }

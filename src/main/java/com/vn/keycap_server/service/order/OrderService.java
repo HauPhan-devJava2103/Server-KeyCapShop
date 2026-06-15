@@ -219,6 +219,9 @@ public class OrderService implements IOrderService {
                                 .build();
                 orderRepository.save(order);
 
+                // Ghi lịch sử trạng thái: Đơn hàng được tạo
+                recordStatusChange(order, null, EOrderStatus.PENDING, "Đơn hàng được tạo", userId);
+
                 // Order Items
                 List<OrderItem> orderItems = new ArrayList<>();
                 for (CheckoutItemRequest item : request.getItems()) {
@@ -313,21 +316,28 @@ public class OrderService implements IOrderService {
                 order.setPaymentStatus(EPaymentStatus.FAILED);
                 orderRepository.save(order);
 
-                OrderStatusHistory history = new OrderStatusHistory();
-                history.setOrder(order);
-                history.setFromStatus(fromStatus);
-                history.setToStatus(EOrderStatus.CANCELLED);
-                history.setNote(request.getReason());
-                history.setCreatedBy(userId);
-                orderStatusHistoryRepository.save(history);
+                // Ghi lịch sử trạng thái
+                recordStatusChange(order, fromStatus, EOrderStatus.CANCELLED, request.getReason(), userId);
 
                 // Restock Item
                 for (OrderItem item : order.getItems()) {
                         ProductVariant variant = item.getVariant();
-                        item.setQuantity(variant.getStockQuantity() + item.getQuantity());
+                        variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
                 }
                 productVariantRepository.saveAll(order.getItems().stream().map(OrderItem::getVariant).toList());
 
+        }
+
+        // Helper Methods
+        public void recordStatusChange(Order order, EOrderStatus fromStatus,
+                        EOrderStatus toStatus, String note, Long createdBy) {
+                OrderStatusHistory history = new OrderStatusHistory();
+                history.setOrder(order);
+                history.setFromStatus(fromStatus);
+                history.setToStatus(toStatus);
+                history.setNote(note);
+                history.setCreatedBy(createdBy);
+                orderStatusHistoryRepository.save(history);
         }
 
 }
