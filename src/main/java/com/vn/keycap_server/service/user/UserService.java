@@ -49,7 +49,8 @@ public class UserService implements IUserService {
     }
 
     /**
-     * Cập nhật thông tin profile và chỉ kích hoạt avatar thuộc sở hữu của user hiện tại.
+     * Cập nhật thông tin profile và chỉ kích hoạt avatar thuộc sở hữu của user hiện
+     * tại.
      */
     @Override
     @Transactional
@@ -65,7 +66,8 @@ public class UserService implements IUserService {
             avatarMedia.setStatus(EMediaStatus.ACTIVE);
             user.setAvatarMedia(avatarMedia);
 
-            // Chỉ bỏ tag tmp sau khi transaction DB commit để Cloudinary không lệch trạng thái với DB.
+            // Chỉ bỏ tag tmp sau khi transaction DB commit để Cloudinary không lệch trạng
+            // thái với DB.
             removeTemporaryTagAfterCommit(avatarMedia);
         }
 
@@ -79,10 +81,11 @@ public class UserService implements IUserService {
     private UserProfileResponse buildProfileResponse(User user, Long userId) {
         UserProfileResponse response = userProfileMapper.toUserProfileResponse(user);
 
-        // Chỉ truy vấn số lượng cần hiển thị, không tải toàn bộ đơn hàng và wishlist vào bộ nhớ.
+        // Chỉ truy vấn số lượng cần hiển thị, không tải toàn bộ đơn hàng và wishlist
+        // vào bộ nhớ.
         response.setStats(ProfileStatsResponse.builder()
                 .totalOrders(orderRepository.countByUserId(userId))
-                .completedOrders(orderRepository.countByUserIdAndStatus(userId, EOrderStatus.DELIVERED))
+                .completedOrders(orderRepository.countByUserIdAndStatus(userId, EOrderStatus.SUCCESS))
                 .wishlistItems(wishlistRepository.countByUserId(userId))
                 .build());
 
