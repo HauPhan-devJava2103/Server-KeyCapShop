@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.vn.keycap_server.dto.request.payment.momo.MomoIpnRequest;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.service.payment.momo.IMomoPaymentService;
+import com.vn.keycap_server.service.payment.paypal.IPayPalService;
 import com.vn.keycap_server.service.payment.vnpay.IVNPayService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class PaymentController {
 
     private final IMomoPaymentService momoPaymentService;
     private final IVNPayService vnPayService;
+    private final IPayPalService payPalService;
 
     @PostMapping("/momo/ipn")
     public ResponseEntity<Void> handleIpn(@RequestBody MomoIpnRequest ipnRequest) {
@@ -50,6 +52,23 @@ public class PaymentController {
             Map<String, String> response = new HashMap<>();
             response.put("RspCode", "99");
             response.put("Message", "Unknown Error");
+            return ResponseEntity.ok(response);
+        }
+    }
+
+    @PostMapping("/paypal/capture")
+    public ResponseEntity<Map<String, String>> capturePayPal(
+            @RequestParam("token") String paypalOrderId) {
+        try {
+            payPalService.captureOrder(paypalOrderId);
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Thanh toán PayPal thành công");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "error");
+            response.put("message", e.getMessage());
             return ResponseEntity.ok(response);
         }
     }

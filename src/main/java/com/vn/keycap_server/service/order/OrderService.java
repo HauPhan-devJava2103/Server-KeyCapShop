@@ -8,7 +8,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.vn.keycap_server.dto.request.order.CancelOrderRequest;
 import com.vn.keycap_server.dto.request.order.CheckoutItemRequest;
 import com.vn.keycap_server.dto.request.order.CheckoutRequest;
 import com.vn.keycap_server.dto.request.order.PrepareCheckoutRequestWrapper;
@@ -17,8 +19,10 @@ import com.vn.keycap_server.dto.response.order.CheckoutItemResponse;
 import com.vn.keycap_server.dto.response.order.CheckoutItemResponse.PrepareProductInfo;
 import com.vn.keycap_server.dto.response.order.CheckoutResponse;
 import com.vn.keycap_server.dto.response.order.CheckoutResult;
+import com.vn.keycap_server.dto.response.order.OrderResponse;
 import com.vn.keycap_server.dto.response.order.PrepareCheckoutResponse;
 import com.vn.keycap_server.exception.BadRequestException;
+import com.vn.keycap_server.mapper.OrderMapper;
 import com.vn.keycap_server.modal.Address;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.modal.OrderItem;
@@ -33,13 +37,13 @@ import com.vn.keycap_server.repository.OrderRepository;
 import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.service.order.message.OrderExpiryProducer;
+import com.vn.keycap_server.service.orderhistorystatus.OrderHistoryService;
 import com.vn.keycap_server.service.payment.IPaymentStrategy;
 import com.vn.keycap_server.service.shipping.GhnShippingService;
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentMethod;
 import com.vn.keycap_server.utils.EPaymentStatus;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -52,12 +56,15 @@ public class OrderService implements IOrderService {
         private final OrderRepository orderRepository;
         private final OrderItemRepository orderItemRepository;
         private final CartItemRepository cartItemRepository;
+        private final OrderHistoryService orderHistoryService;
 
         private final GhnShippingService ghnShippingService;
 
         private final List<IPaymentStrategy> paymentStrategies;
 
         private final OrderExpiryProducer orderExpiryProducer;
+
+        private final OrderMapper orderMapper;
 
         @Override
         public PrepareCheckoutResponse prepareOrder(PrepareCheckoutRequestWrapper request, Long userId) {
@@ -206,10 +213,14 @@ public class OrderService implements IOrderService {
                                 .address(address)
                                 .totalAmount(totalAmount)
                                 .status(EOrderStatus.PENDING)
+                                .shippingFee(shippingFee)
                                 .paymentStatus(EPaymentStatus.PENDING)
                                 .paymentMethod(request.getPaymentMethod())
                                 .build();
                 orderRepository.save(order);
+
+                // Ghi lịch sử trạng thái: Đơn hàng được tạo
+                orderHistoryService.recordStatusChange(order, null, EOrderStatus.PENDING, "Đơn hàng được tạo", userId);
 
                 // Order Items
                 List<OrderItem> orderItems = new ArrayList<>();
@@ -258,6 +269,64 @@ public class OrderService implements IOrderService {
                                 .paymentMethod(order.getPaymentMethod())
                                 .paymentStatus(order.getPaymentStatus())
                                 .build();
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<OrderResponse> getUserOrders(Long userId, String status) {
+                List<Order> orders;
+                if (status == null || status.isEmpty()) {
+                        orders = orderRepository.findByUserIdAndStatusInOrderByCreatedAtDesc(userId,
+                                        List.of(EOrderStatus.PENDING, EOrderStatus.PREPARING, EOrderStatus.SHIPPING));
+
+                } else {
+                        EOrderStatus orderStatus = EOrderStatus.valueOf(status.toUpperCase());
+                        orders = orderRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, orderStatus);
+                }
+
+                return orderMapper.toOrderResponseList(orders);
+
+        }
+
+        @Override
+        public OrderResponse getOrderDetail(Long orderId, Long userId) {
+                Order order = orderRepository.findById(orderId)
+                                .orElseThrow(() -> new BadRequestException("Đơn hàng không tồn tại"));
+                if (!order.getUser().getId().equals(userId)) {
+                        throw new BadRequestException("Đơn hàng không thuộc người dùng này");
+                }
+                return orderMapper.toOrderResponse(order);
+
+        }
+
+        @Override
+        public void cancelOrder(Long orderId, Long userId, CancelOrderRequest request) {
+
+                Order order = orderRepository.findById(orderId)
+                                .orElseThrow(() -> new BadRequestException("Đơn hàng không tồn tại"));
+                if (!order.getUser().getId().equals(userId)) {
+                        throw new BadRequestException("Đơn hàng không thuộc người dùng này");
+                }
+                if (order.getStatus() != EOrderStatus.PENDING) {
+                        throw new BadRequestException("Chỉ có thể hủy đơn hàng ở trạng thái chờ xác nhận");
+                }
+
+                EOrderStatus fromStatus = order.getStatus();
+                order.setStatus(EOrderStatus.CANCELLED);
+                order.setPaymentStatus(EPaymentStatus.FAILED);
+                orderRepository.save(order);
+
+                // Ghi lịch sử trạng thái
+                orderHistoryService.recordStatusChange(order, fromStatus, EOrderStatus.CANCELLED, request.getReason(),
+                                userId);
+
+                // Restock Item
+                for (OrderItem item : order.getItems()) {
+                        ProductVariant variant = item.getVariant();
+                        variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
+                }
+                productVariantRepository.saveAll(order.getItems().stream().map(OrderItem::getVariant).toList());
+
         }
 
 }

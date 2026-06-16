@@ -1,6 +1,7 @@
 package com.vn.keycap_server.modal;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentMethod;
@@ -14,6 +15,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,18 +46,10 @@ public class Order extends AbstractEntity {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
-    // Trạng thái đơn hàng (ví dụ: PENDING, SHIPPING, DELIVERED, CANCELLED)
+    // Trạng thái đơn hàng (ví dụ: PENDING, CONFIRMED, PREPARING, SHIPPING, SUCCESS, CANCELLED)
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private EOrderStatus status;
-
-    // Địa chỉ giao hàng của người dùng
-    @Column(name = "shipping_address", columnDefinition = "TEXT")
-    private String shippingAddress;
-
-    // Số điện thoại liên hệ giao hàng
-    @Column(name = "phone_number")
-    private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")
@@ -65,6 +59,9 @@ public class Order extends AbstractEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status")
     private EPaymentStatus paymentStatus;
+
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee;
 
     @Column(name = "transaction_id")
     private String transactionId;
@@ -76,5 +73,10 @@ public class Order extends AbstractEntity {
 
     // Danh sách sản phẩm trong đơn hàng
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
-    private java.util.List<OrderItem> items;
+    private List<OrderItem> items;
+
+    // Danh sách lịch sử trạng thái
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    @OrderBy("createdAt ASC")
+    private List<OrderStatusHistory> statusHistory;
 }
