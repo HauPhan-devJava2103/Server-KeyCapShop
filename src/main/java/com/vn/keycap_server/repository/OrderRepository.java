@@ -12,6 +12,9 @@ import com.vn.keycap_server.utils.EOrderStatus;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
+    long countByUserId(Long userId);
+
+    long countByUserIdAndStatus(Long userId, EOrderStatus status);
     Optional<Order> findByTransactionId(String transactionId);
 
     List<Order> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, EOrderStatus status);

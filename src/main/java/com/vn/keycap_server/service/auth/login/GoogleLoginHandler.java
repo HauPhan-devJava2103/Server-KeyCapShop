@@ -59,14 +59,14 @@ public class GoogleLoginHandler implements ILoginHandler<LoginGoogleRequest> {
         GoogleIdToken.Payload payload = idToken.getPayload();
         String email = payload.getEmail();
         String fullName = (String) payload.get("name");
-        String avatarUrl = (String) payload.get("picture");
 
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> {
+                    // Ảnh Google là URL ngoài hệ thống nên không lưu làm avatar.
+                    // Avatar chỉ được quản lý qua bảng medias để thống nhất quyền sở hữu và cleanup.
                     User newUser = User.builder()
                             .email(email)
                             .fullName(fullName)
-                            .avatarUrl(avatarUrl)
                             .role(ERole.USER)
                             .password(null)
                             .build();

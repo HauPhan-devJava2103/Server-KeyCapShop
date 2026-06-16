@@ -4,10 +4,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -40,6 +42,7 @@ import com.vn.keycap_server.repository.BrandRepository;
 import com.vn.keycap_server.repository.CategoryRepository;
 import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.ProductRepository;
+import com.vn.keycap_server.repository.ProductImageRepository;
 import com.vn.keycap_server.repository.ProductTypeRepository;
 import com.vn.keycap_server.repository.ReviewRepository;
 import com.vn.keycap_server.repository.WishlistRepository;
@@ -65,6 +68,7 @@ public class ProductService implements IProductService {
         private final ProductTypeRepository typeRepository;
         private final BrandRepository brandRepository;
         private final ReviewRepository reviewRepository;
+        private final ProductImageRepository productImageRepository;
 
         // =================================================
         // Triển khai các phương thức trong IProductService
@@ -470,6 +474,78 @@ public class ProductService implements IProductService {
                                 .type(types)
                                 .brand(brands)
                                 .build();
+        }
+
+        /**
+         * Lấy sản phẩm liên quan đến danh sách product ID trong giỏ hàng.
+         *
+         * @param productIds danh sách ID theo repeated query param
+         * @param size       số lượng kết quả tối đa
+         * @return danh sách product card liên quan, không bao gồm product đầu vào
+         */
+        @Override
+        @Transactional(readOnly = true)
+        public List<ProductCardResponse> getRelatedProducts(List<Long> productIds, int size) {
+                // Bước 1: Validate request để bảo vệ query và giới hạn tải cho database.
+                if (productIds == null || productIds.isEmpty()) {
+                        throw new BadRequestException("productIds không được để trống");
+                }
+                if (size < 1 || size > 20) {
+                        throw new BadRequestException("size phải nằm trong khoảng từ 1 - 20");
+                }
+                if (productIds.stream().anyMatch(id -> id == null || id <= 0)) {
+                        throw new BadRequestException("productId phải là số nguyên dương");
+                }
+
+                // Bước 2: Loại ID trùng lặp trước khi tìm các tiêu chí liên quan.
+                List<Long> sourceIds = productIds.stream()
+                                .distinct()
+                                .toList();
+
+                // Bước 3: Query ID candidate còn hàng, đang bán và loại trừ product đầu vào.
+                List<Long> relatedIds = productRepository.findRelatedProductIds(
+                                sourceIds,
+                                EProductStatus.AVAILABLE,
+                                PageRequest.of(0, size));
+                if (relatedIds.isEmpty()) {
+                        return Collections.emptyList();
+                }
+
+                // Bước 4: Batch load dữ liệu card và ảnh, tránh query trong vòng lặp.
+                Map<Long, Product> productById = productRepository.findCardProductsByIds(relatedIds).stream()
+                                .collect(Collectors.toMap(Product::getId, Function.identity()));
+                Map<Long, String> imageByProductId = productImageRepository.findDisplayImagesByProductIds(relatedIds)
+                                .stream()
+                                .collect(Collectors.toMap(
+                                                image -> image.getProduct().getId(),
+                                                ProductImage::getUrl,
+                                                (first, ignored) -> first,
+                                                LinkedHashMap::new));
+
+                // Bước 5: Lấy wishlist một lần; anonymous user mặc định isFavorite = false.
+                Long currentUserId = getCurrentUserId();
+                Set<Long> favoriteProductIds = currentUserId == null
+                                ? Collections.emptySet()
+                                : new HashSet<>(wishlistRepository.findFavoriteProductIds(currentUserId));
+
+                // Bước 6: Map theo đúng thứ tự ID mà query related đã sắp xếp.
+                return relatedIds.stream()
+                                .map(productById::get)
+                                .filter(Objects::nonNull)
+                                .map(product -> ProductCardResponse.builder()
+                                                .id(product.getId())
+                                                .name(product.getName())
+                                                .slug(product.getSlug())
+                                                .imageUrl(imageByProductId.get(product.getId()))
+                                                .typeName(product.getType() == null ? null
+                                                                : product.getType().getName())
+                                                .categoryId(product.getCategory() == null
+                                                                ? null
+                                                                : product.getCategory().getId())
+                                                .minPrice(productMapper.getMinPrice(product))
+                                                .favorite(favoriteProductIds.contains(product.getId()))
+                                                .build())
+                                .toList();
         }
 
         // =================================================

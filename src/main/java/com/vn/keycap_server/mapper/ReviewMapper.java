@@ -20,6 +20,6 @@ public interface ReviewMapper {
     ReviewResponse reviewToReviewResponse(Review review);
 
     @Mapping(target = "fullName", source = "fullName")
-    @Mapping(target = "avatar", source = "avatarUrl")
+    @Mapping(target = "avatar", source = "avatarMedia.secureUrl")
     UserReviewInfo userToUserReviewInfo(User user);
 }

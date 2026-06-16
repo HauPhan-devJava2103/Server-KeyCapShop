@@ -19,6 +19,8 @@ import com.vn.keycap_server.modal.Wishlist;
 @Repository
 public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
 
+    long countByUserId(Long userId);
+
     /**
      * Lấy danh sách ID sản phẩm yêu thích của user.
      *

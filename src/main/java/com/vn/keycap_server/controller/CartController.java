@@ -3,6 +3,8 @@ package com.vn.keycap_server.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -39,6 +41,20 @@ public class CartController {
                 .success(true)
                 .message("Lấy thông tin giỏ hàng thành công")
                 .data(cartService.getCartSummary())
+                .build());
+    }
+
+    /**
+     * GET /cart
+     * Mô tả: Lấy chi tiết các item, biến thể và tổng tiền trong giỏ hàng của user.
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse> getCart(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Lấy giỏ hàng thành công")
+                .data(cartService.getCart(userId))
                 .build());
     }
 

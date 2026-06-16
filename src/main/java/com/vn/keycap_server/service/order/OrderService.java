@@ -79,8 +79,9 @@ public class OrderService implements IOrderService {
                 Map<Long, ProductVariant> variantMap = productVariants.stream()
                                 .collect(Collectors.toMap(ProductVariant::getId, Function.identity()));
                 // Get Address
-                Address address = addressRepository.findById(request.getAddressId())
-                                .orElseThrow(() -> new BadRequestException("Địa chỉ không tồn tại"));
+                Address address = addressRepository.findByIdAndUserId(request.getAddressId(), userId)
+                                .orElseThrow(() -> new BadRequestException(
+                                                "Địa chỉ không tồn tại hoặc không thuộc người dùng"));
                 // Subtotal
                 BigDecimal subtotal = BigDecimal.ZERO;
 

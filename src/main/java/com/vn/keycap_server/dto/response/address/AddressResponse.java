@@ -15,25 +15,15 @@ public class AddressResponse {
     private String fullName;
     private String phone;
 
-    // Code For Province , District , Ward
-    private LocationInfo province;
-    private LocationInfo district;
-    private LocationInfo ward;
+    // Code - Province , District , Ward
+    private LocationInfoResponse province;
+    private LocationInfoResponse district;
+    private LocationInfoResponse ward;
 
     private String street;
     private String fullAddress;
     private Double latitude;
     private Double longitude;
     private Boolean isDefault;
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Builder
-    public static class LocationInfo {
-        private String code;
-        private String name;
-
-    }
 
 }

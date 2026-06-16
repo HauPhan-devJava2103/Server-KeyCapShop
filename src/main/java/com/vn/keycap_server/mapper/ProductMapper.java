@@ -38,6 +38,7 @@ public interface ProductMapper {
         @Mapping(target = "id", source = "id")
 
         @Mapping(target = "typeName", source = "type.name") // Ánh xạ tên loại sản phẩm từ Type Entity
+        @Mapping(target = "categoryId", source = "category.id")
         @Mapping(target = "favorite", ignore = true) // Bỏ qua isFavorite vì sẽ xử lý động theo wishlist của User sau
                                                      // này
         @Mapping(target = "imageUrl", expression = "java(getPrimaryImageUrl(product))") // Lấy URL ảnh đại diện chính

@@ -73,4 +73,50 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
                 @Param("status") EProductStatus status,
                 Pageable pageable
         );
+
+        /**
+         * Lấy ID sản phẩm liên quan, loại trừ sản phẩm đầu vào và sản phẩm hết hàng.
+         */
+        @Query("""
+                SELECT DISTINCT p.id
+                FROM Product p
+                WHERE p.id NOT IN :sourceIds
+                  AND p.status = :status
+                  AND EXISTS (
+                      SELECT 1 FROM ProductVariant variant
+                      WHERE variant.product = p AND variant.stockQuantity > 0
+                  )
+                  AND (
+                      p.category.id IN (
+                          SELECT source.category.id FROM Product source
+                          WHERE source.id IN :sourceIds AND source.category IS NOT NULL
+                      )
+                      OR p.type.id IN (
+                          SELECT source.type.id FROM Product source
+                          WHERE source.id IN :sourceIds AND source.type IS NOT NULL
+                      )
+                      OR p.brand.id IN (
+                          SELECT source.brand.id FROM Product source
+                          WHERE source.id IN :sourceIds AND source.brand IS NOT NULL
+                      )
+                  )
+                ORDER BY p.updatedAt DESC, p.id ASC
+                """)
+        List<Long> findRelatedProductIds(
+                        @Param("sourceIds") List<Long> sourceIds,
+                        @Param("status") EProductStatus status,
+                        Pageable pageable);
+
+        /**
+         * Batch load dữ liệu cần thiết để map danh sách product card.
+         */
+        @Query("""
+                SELECT DISTINCT p
+                FROM Product p
+                LEFT JOIN FETCH p.type
+                LEFT JOIN FETCH p.category
+                LEFT JOIN FETCH p.variants
+                WHERE p.id IN :ids
+                """)
+        List<Product> findCardProductsByIds(@Param("ids") List<Long> ids);
 }

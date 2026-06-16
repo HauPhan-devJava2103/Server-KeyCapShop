@@ -31,6 +31,9 @@ public class ProductCardResponse {
     // Loại sản phẩm (ví dụ: Linear, Tactile, Clicky)
     private String typeName;
 
+    // ID danh mục dùng cho contract ProductItem.
+    private Long categoryId;
+
     // Trạng thái yêu thích của user hiện tại
     @JsonProperty("isFavorite") // Đổi tên trường thành "isFavorite" trong JSON
     private boolean favorite;
