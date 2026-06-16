@@ -26,7 +26,6 @@ import com.vn.keycap_server.mapper.OrderMapper;
 import com.vn.keycap_server.modal.Address;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.modal.OrderItem;
-import com.vn.keycap_server.modal.OrderStatusHistory;
 import com.vn.keycap_server.modal.ProductImage;
 import com.vn.keycap_server.modal.ProductVariant;
 import com.vn.keycap_server.modal.ProductVariantAttribute;
@@ -35,10 +34,10 @@ import com.vn.keycap_server.repository.AddressRepository;
 import com.vn.keycap_server.repository.CartItemRepository;
 import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.OrderRepository;
-import com.vn.keycap_server.repository.OrderStatusHistoryRepository;
 import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.service.order.message.OrderExpiryProducer;
+import com.vn.keycap_server.service.orderhistorystatus.OrderHistoryService;
 import com.vn.keycap_server.service.payment.IPaymentStrategy;
 import com.vn.keycap_server.service.shipping.GhnShippingService;
 import com.vn.keycap_server.utils.EOrderStatus;
@@ -57,7 +56,7 @@ public class OrderService implements IOrderService {
         private final OrderRepository orderRepository;
         private final OrderItemRepository orderItemRepository;
         private final CartItemRepository cartItemRepository;
-        private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+        private final OrderHistoryService orderHistoryService;
 
         private final GhnShippingService ghnShippingService;
 
@@ -220,7 +219,7 @@ public class OrderService implements IOrderService {
                 orderRepository.save(order);
 
                 // Ghi lịch sử trạng thái: Đơn hàng được tạo
-                recordStatusChange(order, null, EOrderStatus.PENDING, "Đơn hàng được tạo", userId);
+                orderHistoryService.recordStatusChange(order, null, EOrderStatus.PENDING, "Đơn hàng được tạo", userId);
 
                 // Order Items
                 List<OrderItem> orderItems = new ArrayList<>();
@@ -317,7 +316,8 @@ public class OrderService implements IOrderService {
                 orderRepository.save(order);
 
                 // Ghi lịch sử trạng thái
-                recordStatusChange(order, fromStatus, EOrderStatus.CANCELLED, request.getReason(), userId);
+                orderHistoryService.recordStatusChange(order, fromStatus, EOrderStatus.CANCELLED, request.getReason(),
+                                userId);
 
                 // Restock Item
                 for (OrderItem item : order.getItems()) {
@@ -326,18 +326,6 @@ public class OrderService implements IOrderService {
                 }
                 productVariantRepository.saveAll(order.getItems().stream().map(OrderItem::getVariant).toList());
 
-        }
-
-        // Helper Methods
-        public void recordStatusChange(Order order, EOrderStatus fromStatus,
-                        EOrderStatus toStatus, String note, Long createdBy) {
-                OrderStatusHistory history = new OrderStatusHistory();
-                history.setOrder(order);
-                history.setFromStatus(fromStatus);
-                history.setToStatus(toStatus);
-                history.setNote(note);
-                history.setCreatedBy(createdBy);
-                orderStatusHistoryRepository.save(history);
         }
 
 }

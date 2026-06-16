@@ -17,8 +17,8 @@ import com.vn.keycap_server.configuration.vnpay.VNPayProperties;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.repository.OrderRepository;
-import com.vn.keycap_server.service.order.OrderService;
 import com.vn.keycap_server.service.order.event.OrderCompletedEvent;
+import com.vn.keycap_server.service.orderhistorystatus.OrderHistoryService;
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentStatus;
 import com.vn.keycap_server.utils.VnPayEncoder;
@@ -32,7 +32,7 @@ public class VNPayService implements IVNPayService {
     private final VNPayProperties vnPayProperties;
     private final OrderRepository orderRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final OrderService orderService;
+    private final OrderHistoryService orderHistoryService;
 
     @Override
     public String createPaymentUrl(Long orderId, Long userId, String clientIpAddress) {
@@ -172,14 +172,14 @@ public class VNPayService implements IVNPayService {
                     new OrderCompletedEvent(this, order.getId(), order.getUser().getId()));
 
             // Ghi lịch sử: PENDING -> CONFIRMED
-            orderService.recordStatusChange(order, EOrderStatus.PENDING,
+            orderHistoryService.recordStatusChange(order, EOrderStatus.PENDING,
                     EOrderStatus.CONFIRMED, "Thanh toán VNPay thành công", null);
         } else {
             order.setPaymentStatus(EPaymentStatus.FAILED);
             order.setStatus(EOrderStatus.CANCELLED);
 
             // Ghi lịch sử: PENDING -> CANCELLED
-            orderService.recordStatusChange(order, EOrderStatus.PENDING,
+            orderHistoryService.recordStatusChange(order, EOrderStatus.PENDING,
                     EOrderStatus.CANCELLED,
                     "Thanh toán VNPay thất bại (code: " + responseCode + ")", null);
         }

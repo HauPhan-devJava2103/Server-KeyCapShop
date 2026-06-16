@@ -17,8 +17,8 @@ import com.vn.keycap_server.dto.response.payment.paypal.PayPalCreateResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.repository.OrderRepository;
-import com.vn.keycap_server.service.order.OrderService;
 import com.vn.keycap_server.service.order.event.OrderCompletedEvent;
+import com.vn.keycap_server.service.orderhistorystatus.OrderHistoryService;
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentStatus;
 
@@ -35,7 +35,7 @@ public class PayPalService implements IPayPalService {
         private final OrderRepository orderRepository;
 
         private final ApplicationEventPublisher eventPublisher;
-        private final OrderService orderService;
+        private final OrderHistoryService orderHistoryService;
 
         // Tỷ giá VND -> USD
         private static final BigDecimal VND_TO_USD_RATE = new BigDecimal("26310");
@@ -98,13 +98,13 @@ public class PayPalService implements IPayPalService {
                         eventPublisher.publishEvent(
                                         new OrderCompletedEvent(this, order.getId(), order.getUser().getId()));
                         // Ghi lịch sử: PENDING -> CONFIRMED
-                        orderService.recordStatusChange(order, EOrderStatus.PENDING,
+                        orderHistoryService.recordStatusChange(order, EOrderStatus.PENDING,
                                         EOrderStatus.CONFIRMED, "Thanh toán PayPal thành công", null);
                 } else {
                         order.setPaymentStatus(EPaymentStatus.FAILED);
                         order.setStatus(EOrderStatus.CANCELLED);
                         // Ghi lịch sử: PENDING -> CANCELLED
-                        orderService.recordStatusChange(order, EOrderStatus.PENDING,
+                        orderHistoryService.recordStatusChange(order, EOrderStatus.PENDING,
                                         EOrderStatus.CANCELLED,
                                         "Thanh toán PayPal thất bại", null);
                 }
