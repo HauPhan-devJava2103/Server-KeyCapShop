@@ -26,6 +26,7 @@ import com.vn.keycap_server.mapper.OrderMapper;
 import com.vn.keycap_server.modal.Address;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.modal.OrderItem;
+import com.vn.keycap_server.modal.Product;
 import com.vn.keycap_server.modal.ProductImage;
 import com.vn.keycap_server.modal.ProductVariant;
 import com.vn.keycap_server.modal.ProductVariantAttribute;
@@ -34,6 +35,7 @@ import com.vn.keycap_server.repository.AddressRepository;
 import com.vn.keycap_server.repository.CartItemRepository;
 import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.OrderRepository;
+import com.vn.keycap_server.repository.ProductRepository;
 import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.service.order.message.OrderExpiryProducer;
@@ -43,6 +45,7 @@ import com.vn.keycap_server.service.shipping.GhnShippingService;
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentMethod;
 import com.vn.keycap_server.utils.EPaymentStatus;
+import com.vn.keycap_server.utils.EProductStatus;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,8 +61,9 @@ public class OrderService implements IOrderService {
         private final OrderRepository orderRepository;
         private final OrderItemRepository orderItemRepository;
         private final CartItemRepository cartItemRepository;
-        private final OrderHistoryService orderHistoryService;
+        private final ProductRepository productRepository;
 
+        private final OrderHistoryService orderHistoryService;
         private final GhnShippingService ghnShippingService;
 
         private final List<IPaymentStrategy> paymentStrategies;
@@ -206,6 +210,7 @@ public class OrderService implements IOrderService {
 
                         // Delete Stock
                         productVariant.setStockQuantity(productVariant.getStockQuantity() - item.getQuantity());
+
                 }
 
                 // Total Weight
@@ -248,6 +253,16 @@ public class OrderService implements IOrderService {
                 }
                 orderItemRepository.saveAll(orderItems);
                 productVariantRepository.saveAll(productVariants);
+
+                // Check Status Product
+                for (ProductVariant variant : productVariants) {
+                        Product product = variant.getProduct();
+                        boolean isCheckStock = product.getVariants().stream().anyMatch(pv -> pv.getStockQuantity() > 0);
+                        if (!isCheckStock) {
+                                product.setStatus(EProductStatus.UNAVAILABLE);
+                                productRepository.save(product);
+                        }
+                }
 
                 // If have cartIds
                 if (request.getCartItemIds() != null && !request.getCartItemIds().isEmpty()) {

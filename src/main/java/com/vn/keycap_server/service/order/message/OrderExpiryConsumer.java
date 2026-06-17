@@ -15,6 +15,7 @@ import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.service.orderhistorystatus.OrderHistoryService;
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentStatus;
+import com.vn.keycap_server.utils.EProductStatus;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,12 @@ public class OrderExpiryConsumer {
             ProductVariant variant = item.getVariant();
             variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
 
+            if (variant.getProduct().getStatus().equals(EProductStatus.UNAVAILABLE)) {
+                variant.getProduct().setStatus(EProductStatus.AVAILABLE);
+            }
+
         }
+
         List<ProductVariant> variants = orderItems.stream()
                 .map(OrderItem::getVariant)
                 .toList();
