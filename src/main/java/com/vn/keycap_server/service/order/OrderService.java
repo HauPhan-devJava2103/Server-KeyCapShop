@@ -45,9 +45,11 @@ import com.vn.keycap_server.utils.EPaymentMethod;
 import com.vn.keycap_server.utils.EPaymentStatus;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService implements IOrderService {
 
         private final ProductVariantRepository productVariantRepository;
@@ -79,9 +81,14 @@ public class OrderService implements IOrderService {
                 Map<Long, ProductVariant> variantMap = productVariants.stream()
                                 .collect(Collectors.toMap(ProductVariant::getId, Function.identity()));
                 // Get Address
-                Address address = addressRepository.findByIdAndUserId(request.getAddressId(), userId)
-                                .orElseThrow(() -> new BadRequestException(
-                                                "Địa chỉ không tồn tại hoặc không thuộc người dùng"));
+                Address address = request.getAddressId() == null ? null
+                                : addressRepository.findById(request.getAddressId())
+                                                .orElse(null);
+
+                if (address == null) {
+                        address = addressRepository.findByUserIdAndIsDefaultTrue(userId)
+                                        .orElse(null);
+                }
                 // Subtotal
                 BigDecimal subtotal = BigDecimal.ZERO;
 
@@ -137,7 +144,12 @@ public class OrderService implements IOrderService {
                 int totalWeight = 1000; // TODO: Phát triển thêm sau này giả định 1kg
 
                 // Shipping Fee
-                BigDecimal shippingFee = ghnShippingService.calculateShippingFee(address, totalWeight);
+                BigDecimal shippingFee = BigDecimal.ZERO;
+                if (address != null) {
+                        shippingFee = ghnShippingService.calculateShippingFee(address, totalWeight);
+                } else {
+                        log.info("Address is null, shipping fee defaults to 0");
+                }
 
                 // Total Amount
                 BigDecimal totalAmount = subtotal.add(shippingFee);
@@ -145,7 +157,7 @@ public class OrderService implements IOrderService {
                 // Prepare response
                 return PrepareCheckoutResponse.builder()
                                 .items(response)
-                                .subtotal(subtotal)
+                                .subTotal(subtotal)
                                 .shippingFee(shippingFee)
                                 .totalAmount(totalAmount)
                                 .build();
@@ -239,7 +251,10 @@ public class OrderService implements IOrderService {
 
                 // If have cartIds
                 if (request.getCartItemIds() != null && !request.getCartItemIds().isEmpty()) {
-                        cartItemRepository.deleteAllByIdInBatch(request.getCartItemIds());
+                        List<Long> idsToDelete = request.getCartItemIds().stream()
+                                        .map(item -> item.getId())
+                                        .toList();
+                        cartItemRepository.deleteAllByIdInBatch(idsToDelete);
                 }
 
                 IPaymentStrategy selectedStrategy = paymentStrategies.stream()

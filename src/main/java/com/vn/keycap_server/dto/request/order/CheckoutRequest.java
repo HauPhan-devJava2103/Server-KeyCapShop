@@ -23,6 +23,10 @@ public class CheckoutRequest {
 
     private List<Long> voucherIds;
 
-    private List<Long> cartItemIds;
+    private List<CartItemIdList> cartItemIds;
 
+    @Data
+    public static class CartItemIdList {
+        private Long id;
+    }
 }

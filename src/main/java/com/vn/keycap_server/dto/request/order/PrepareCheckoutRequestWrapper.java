@@ -12,7 +12,6 @@ public class PrepareCheckoutRequestWrapper {
     @NotNull(message = "items không được null")
     private List<PrepareCheckoutRequest> items;
 
-    @NotNull(message = "addressId không được null")
     private Long addressId;
 
     @Data

@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PrepareCheckoutResponse {
     private List<CheckoutItemResponse> items;
-    private BigDecimal subtotal;
+    private BigDecimal subTotal;
     private BigDecimal shippingFee;
     private BigDecimal totalAmount;
 }
