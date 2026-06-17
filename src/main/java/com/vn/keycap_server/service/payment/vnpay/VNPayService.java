@@ -45,7 +45,7 @@ public class VNPayService implements IVNPayService {
         String vnp_OrderInfo = "KeyCapShop-Order #" + order.getId();
         String vnp_OrderType = "other"; // Loại danh mục hàng hóa
         String vnp_TxnRef = "KEYCAP_" + order.getId() + "_" + System.currentTimeMillis();
-        String vnp_ReturnUrl = vnPayProperties.getRedirectUrl() + "?orderId=" + order.getId();
+        String vnp_ReturnUrl = "http://localhost:3000/api/payment/vnpay/ipn";
         // Amount * 100
         long amount = order.getTotalAmount().multiply(new BigDecimal(100)).longValue();
 
