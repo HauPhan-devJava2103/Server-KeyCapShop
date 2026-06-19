@@ -119,4 +119,22 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
                 WHERE p.id IN :ids
                 """)
         List<Product> findCardProductsByIds(@Param("ids") List<Long> ids);
+
+        /**
+         * Lấy danh sách sản phẩm cho khu vực admin, có tìm kiếm và phân trang.
+         * Chỉ fetch các quan hệ ManyToOne để tránh sai phân trang khi join OneToMany.
+         *
+         * @param search   từ khóa tìm kiếm theo tên hoặc slug
+         * @param pageable thông tin phân trang và sắp xếp
+         * @return trang sản phẩm kèm category, type và brand
+         */
+        @EntityGraph(attributePaths = { "category", "type", "brand" })
+        @Query("""
+                SELECT p
+                FROM Product p
+                WHERE (:search IS NULL
+                    OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(p.slug) LIKE LOWER(CONCAT('%', :search, '%')))
+                """)
+        Page<Product> findAdminProducts(@Param("search") String search, Pageable pageable);
 }
