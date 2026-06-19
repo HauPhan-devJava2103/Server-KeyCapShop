@@ -5,6 +5,9 @@ import org.springframework.stereotype.Repository;
 
 import com.vn.keycap_server.modal.Brand;
 
+/**
+ * Repository thao tác dữ liệu bảng brands.
+ */
 @Repository
 public interface BrandRepository extends JpaRepository<Brand, Long> {
 }
