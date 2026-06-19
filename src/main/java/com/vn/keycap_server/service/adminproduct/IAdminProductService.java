@@ -47,9 +47,9 @@ public interface IAdminProductService {
     AdminProductDetailResponse updateProduct(Long productId, CreateAdminProductRequest request);
 
     /**
-     * Xóa sản phẩm theo ID nếu sản phẩm chưa phát sinh đơn hàng.
+     * Xóa sản phẩm theo ID, hoặc chuyển sang không bán nữa nếu đã phát sinh đơn hàng.
      *
-     * @param productId ID sản phẩm cần xóa
+     * @param productId ID sản phẩm cần xóa hoặc ngừng bán
      */
     void deleteProduct(Long productId);
 }

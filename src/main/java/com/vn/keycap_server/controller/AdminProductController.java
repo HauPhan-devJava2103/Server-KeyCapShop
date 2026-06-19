@@ -3,6 +3,7 @@ package com.vn.keycap_server.controller;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -116,6 +117,27 @@ public class AdminProductController {
                 .success(true)
                 .message("Cập nhật sản phẩm quản trị thành công")
                 .data(product)
+                .build());
+    }
+
+    /**
+     * Xóa sản phẩm theo ID.
+     * Nếu sản phẩm đã có đơn hàng thì service sẽ chuyển sang trạng thái không bán
+     * nữa.
+     *
+     * @param id ID sản phẩm cần xóa hoặc ngừng bán
+     * @return ApiResponse có data null theo contract FE admin
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse> deleteProduct(@PathVariable Long id) {
+        // 1. Gọi service delete
+        adminProductService.deleteProduct(id);
+
+        // 2. Trả data null để FE dùng lại mutation delete hiện có
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Xóa hoặc ngừng bán sản phẩm quản trị thành công")
+                .data(null)
                 .build());
     }
 }

@@ -45,14 +45,17 @@ import com.vn.keycap_server.modal.Category;
 import com.vn.keycap_server.modal.Media;
 import com.vn.keycap_server.modal.ProductType;
 import com.vn.keycap_server.repository.BrandRepository;
+import com.vn.keycap_server.repository.CartItemRepository;
 import com.vn.keycap_server.repository.CategoryRepository;
 import com.vn.keycap_server.repository.MediaRepository;
+import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.ProductImageRepository;
 import com.vn.keycap_server.repository.ProductRepository;
 import com.vn.keycap_server.repository.ProductSpecificationRepository;
 import com.vn.keycap_server.repository.ProductTypeRepository;
 import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.repository.ReviewRepository;
+import com.vn.keycap_server.repository.WishlistRepository;
 import com.vn.keycap_server.repository.projection.ProductRatingSummaryProjection;
 import com.vn.keycap_server.repository.projection.ProductVariantSummaryProjection;
 import com.vn.keycap_server.utils.EMediaStatus;
@@ -78,6 +81,9 @@ public class AdminProductService implements IAdminProductService {
     private final ProductSpecificationRepository productSpecificationRepository;
     private final MediaRepository mediaRepository;
     private final ReviewRepository reviewRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final CartItemRepository cartItemRepository;
+    private final WishlistRepository wishlistRepository;
     private final AdminProductMapper adminProductMapper;
 
     /**
@@ -266,6 +272,74 @@ public class AdminProductService implements IAdminProductService {
 
         // 10. Trả chi tiết sản phẩm sau cập nhật
         return getProductById(savedProduct.getId());
+    }
+
+    /**
+     * Xóa sản phẩm nếu chưa có đơn hàng, hoặc chuyển sang không bán nữa nếu đã có đơn hàng.
+     *
+     * @param productId ID sản phẩm cần xóa hoặc ngừng bán
+     */
+    @Override
+    @Transactional
+    public void deleteProduct(Long productId) {
+        // 1. Validate ID dành riêng cho luồng delete
+        validateDeleteProductId(productId);
+
+        // 2. Load product cần xóa, không dùng lại luồng detail để tránh kéo dữ liệu không cần thiết
+        Product product = getProductForDelete(productId);
+
+        // 3. Dọn dữ liệu tạm của khách hàng để sản phẩm không còn trong giỏ hàng/yêu thích
+        removeProductFromUserTemporaryData(productId);
+
+        // 4. Nếu sản phẩm đã có đơn hàng thì chỉ chuyển sang không bán nữa để giữ lịch sử mua hàng
+        if (orderItemRepository.existsByVariantProductId(productId)) {
+            markProductAsUnavailableForDelete(product);
+            return;
+        }
+
+        // 5. Nếu chưa phát sinh đơn hàng thì hard delete, cascade/orphanRemoval sẽ xóa dữ liệu con
+        productRepository.delete(product);
+    }
+
+    /**
+     * Validate ID sản phẩm cho riêng API delete admin.
+     */
+    private void validateDeleteProductId(Long productId) {
+        // 1. ID phải tồn tại và là số dương
+        if (productId == null || productId <= 0) {
+            throw new BadRequestException("ID sản phẩm không hợp lệ");
+        }
+    }
+
+    /**
+     * Lấy product phục vụ delete, chỉ cần entity gốc để hard delete hoặc cập nhật trạng thái.
+     */
+    private Product getProductForDelete(Long productId) {
+        // 1. Nếu không tìm thấy thì trả 404 theo chuẩn API hiện tại
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm với ID: " + productId));
+    }
+
+    /**
+     * Dọn dữ liệu tạm đang tham chiếu đến sản phẩm trước khi xóa hoặc ngừng bán.
+     */
+    private void removeProductFromUserTemporaryData(Long productId) {
+        // 1. Xóa khỏi wishlist để sản phẩm ngừng bán không còn nằm trong danh sách yêu thích
+        wishlistRepository.deleteByProductId(productId);
+
+        // 2. Xóa khỏi cart để người dùng không checkout nhầm sản phẩm đã bị admin xóa/ngừng bán
+        cartItemRepository.deleteByVariantProductId(productId);
+    }
+
+    /**
+     * Chuyển sản phẩm sang trạng thái không bán nữa khi không thể hard delete vì đã có đơn hàng.
+     */
+    private void markProductAsUnavailableForDelete(Product product) {
+        // 1. Cập nhật trạng thái trên entity gốc, không thay đổi thông tin khác của sản phẩm
+        product.setStatus(EProductStatus.UNAVAILABLE);
+
+        // 2. Lưu lại để public API/cart/order không cho bán tiếp sản phẩm này
+        productRepository.save(product);
     }
 
     /**
