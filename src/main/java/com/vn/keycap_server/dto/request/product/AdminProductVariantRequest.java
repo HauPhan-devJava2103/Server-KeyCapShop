@@ -21,6 +21,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AdminProductVariantRequest {
 
+    // ID biến thể; chỉ có khi cập nhật sản phẩm, tạo mới có thể bỏ trống
+    private Long id;
+
     // SKU biến thể; nếu FE gửi rỗng thì BE sẽ tự sinh từ slug và attributes
     private String sku;
 

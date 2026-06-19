@@ -36,4 +36,20 @@ public interface IAdminProductService {
      * @return chi tiết sản phẩm vừa tạo
      */
     AdminProductDetailResponse createProduct(CreateAdminProductRequest request);
+
+    /**
+     * Cập nhật sản phẩm theo ID từ dữ liệu form admin.
+     *
+     * @param productId ID sản phẩm cần cập nhật
+     * @param request   dữ liệu cập nhật sản phẩm từ FE admin
+     * @return chi tiết sản phẩm sau cập nhật
+     */
+    AdminProductDetailResponse updateProduct(Long productId, CreateAdminProductRequest request);
+
+    /**
+     * Xóa sản phẩm theo ID nếu sản phẩm chưa phát sinh đơn hàng.
+     *
+     * @param productId ID sản phẩm cần xóa
+     */
+    void deleteProduct(Long productId);
 }

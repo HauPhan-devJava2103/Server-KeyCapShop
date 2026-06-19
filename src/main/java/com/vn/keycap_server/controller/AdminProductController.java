@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -92,6 +93,28 @@ public class AdminProductController {
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Tạo sản phẩm quản trị thành công")
+                .data(product)
+                .build());
+    }
+
+    /**
+     * Cập nhật sản phẩm theo ID từ form quản trị.
+     *
+     * @param id      ID sản phẩm cần cập nhật
+     * @param request payload cập nhật sản phẩm từ FE admin
+     * @return ApiResponse chứa chi tiết sản phẩm sau cập nhật
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse> updateProduct(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateAdminProductRequest request) {
+        // 1. Gọi service để validate nghiệp vụ và cập nhật sản phẩm
+        AdminProductDetailResponse product = adminProductService.updateProduct(id, request);
+
+        // 2. Đóng gói response theo chuẩn chung của hệ thống
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Cập nhật sản phẩm quản trị thành công")
                 .data(product)
                 .build());
     }

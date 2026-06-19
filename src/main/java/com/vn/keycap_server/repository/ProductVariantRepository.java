@@ -62,4 +62,13 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
      */
     boolean existsBySkuIn(Collection<String> skus);
 
+    /**
+     * Lấy danh sách variant theo SKU.
+     * Dùng khi update để phân biệt SKU trùng với chính variant hiện tại và SKU trùng với variant khác.
+     *
+     * @param skus danh sách SKU cần kiểm tra
+     * @return danh sách variant có SKU nằm trong input
+     */
+    List<ProductVariant> findBySkuIn(Collection<String> skus);
+
 }

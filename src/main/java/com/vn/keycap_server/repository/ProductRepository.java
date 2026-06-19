@@ -156,4 +156,13 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
          * @return true nếu slug đã tồn tại
          */
         boolean existsBySlug(String slug);
+
+        /**
+         * Kiểm tra slug đã tồn tại ở sản phẩm khác hay chưa.
+         *
+         * @param slug slug cần kiểm tra
+         * @param id   ID sản phẩm hiện tại cần loại trừ
+         * @return true nếu slug đã được sản phẩm khác sử dụng
+         */
+        boolean existsBySlugAndIdNot(String slug, Long id);
 }

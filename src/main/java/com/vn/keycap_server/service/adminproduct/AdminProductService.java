@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -210,6 +211,64 @@ public class AdminProductService implements IAdminProductService {
     }
 
     /**
+     * Cập nhật sản phẩm hiện có theo ID.
+     *
+     * @param productId ID sản phẩm cần cập nhật
+     * @param request   payload cập nhật từ FE admin
+     * @return chi tiết sản phẩm sau cập nhật
+     */
+    @Override
+    @Transactional
+    public AdminProductDetailResponse updateProduct(Long productId, CreateAdminProductRequest request) {
+        // 1. Validate ID và load product hiện tại
+        validateProductId(productId);
+        Product product = productRepository.findAdminProductDetailById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm với ID: " + productId));
+
+        // 2. Chuẩn hóa slug và đảm bảo slug không bị sản phẩm khác sử dụng
+        String slug = normalizeSlug(request.getSlug(), request.getName());
+        validateSlugAvailableForUpdate(slug, productId);
+
+        // 3. Lấy và kiểm tra các phân loại bắt buộc của sản phẩm
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục sản phẩm"));
+        ProductType type = productTypeRepository.findById(request.getTypeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại sản phẩm"));
+        Brand brand = brandRepository.findById(request.getBrandId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu"));
+
+        // 4. Kích hoạt media theo URL ảnh mới FE gửi lên
+        List<String> imageUrls = collectImageUrls(request);
+        activateMediasByUrls(imageUrls);
+
+        // 5. Load các collection hiện tại để sync có kiểm soát
+        List<ProductVariant> currentVariants = productVariantRepository.findByProductIdWithAttributes(productId);
+
+        // 6. Chuẩn hóa SKU và kiểm tra trùng, cho phép SKU thuộc chính variant hiện tại
+        List<String> skus = buildAndValidateSkusForUpdate(slug, request.getVariants(), currentVariants);
+
+        // 7. Cập nhật field cơ bản của product
+        product.setName(request.getName().trim());
+        product.setSlug(slug);
+        product.setDescription(request.getDescription());
+        product.setCategory(category);
+        product.setType(type);
+        product.setBrand(brand);
+        product.setStatus(EProductStatus.AVAILABLE);
+
+        // 8. Sync các collection con theo payload mới
+        syncProductImages(product, request.getImageUrl(), request.getThumbnailUrl());
+        syncProductSpecifications(product, request.getSpecifications());
+        syncProductVariants(product, currentVariants, request.getVariants(), skus);
+
+        // 9. Lưu product, orphanRemoval/cascade xử lý các collection con
+        Product savedProduct = productRepository.save(product);
+
+        // 10. Trả chi tiết sản phẩm sau cập nhật
+        return getProductById(savedProduct.getId());
+    }
+
+    /**
      * Chuẩn hóa từ khóa tìm kiếm để repository có thể bỏ qua khi chuỗi rỗng.
      */
     private String normalizeSearch(String search) {
@@ -269,6 +328,16 @@ public class AdminProductService implements IAdminProductService {
     private void validateSlugAvailable(String slug) {
         // 1. Slug là unique trên bảng products
         if (productRepository.existsBySlug(slug)) {
+            throw new BadRequestException("Slug sản phẩm đã tồn tại");
+        }
+    }
+
+    /**
+     * Kiểm tra slug khi cập nhật, bỏ qua chính sản phẩm hiện tại.
+     */
+    private void validateSlugAvailableForUpdate(String slug, Long productId) {
+        // 1. Slug được phép trùng với chính product hiện tại, nhưng không được trùng product khác
+        if (productRepository.existsBySlugAndIdNot(slug, productId)) {
             throw new BadRequestException("Slug sản phẩm đã tồn tại");
         }
     }
@@ -345,6 +414,57 @@ public class AdminProductService implements IAdminProductService {
         // 3. Kiểm tra trùng SKU với database
         if (productVariantRepository.existsBySkuIn(skus)) {
             throw new BadRequestException("Một hoặc nhiều SKU đã tồn tại trong hệ thống");
+        }
+
+        return skus;
+    }
+
+    /**
+     * Chuẩn hóa và kiểm tra SKU khi cập nhật sản phẩm.
+     */
+    private List<String> buildAndValidateSkusForUpdate(
+            String productSlug,
+            List<AdminProductVariantRequest> requestVariants,
+            List<ProductVariant> currentVariants) {
+        // 1. Sinh/chuẩn hóa SKU tương tự create
+        List<String> skus = new ArrayList<>();
+        for (int index = 0; index < requestVariants.size(); index++) {
+            AdminProductVariantRequest variant = requestVariants.get(index);
+            String sku = StringUtils.hasText(variant.getSku())
+                    ? normalizeSku(variant.getSku())
+                    : generateSku(productSlug, variant.getAttributes(), index);
+            skus.add(sku);
+        }
+
+        // 2. Kiểm tra trùng SKU trong chính request
+        if (new HashSet<>(skus).size() != skus.size()) {
+            throw new BadRequestException("Danh sách biến thể chứa SKU bị trùng");
+        }
+
+        // 3. Validate variantId trong request phải thuộc sản phẩm hiện tại
+        Map<Long, ProductVariant> currentVariantById = currentVariants.stream()
+                .collect(Collectors.toMap(ProductVariant::getId, variant -> variant));
+        for (AdminProductVariantRequest requestVariant : requestVariants) {
+            Long variantId = requestVariant.getId();
+            if (variantId != null && variantId > 0 && !currentVariantById.containsKey(variantId)) {
+                throw new BadRequestException("Biến thể cập nhật không thuộc sản phẩm hiện tại");
+            }
+        }
+
+        // 4. Kiểm tra SKU trùng database, cho phép trùng với chính variant đang được cập nhật
+        Map<String, Long> requestVariantIdBySku = new LinkedHashMap<>();
+        for (int index = 0; index < requestVariants.size(); index++) {
+            Long variantId = requestVariants.get(index).getId();
+            if (variantId != null && variantId > 0) {
+                requestVariantIdBySku.put(skus.get(index), variantId);
+            }
+        }
+
+        for (ProductVariant existingVariant : productVariantRepository.findBySkuIn(skus)) {
+            Long allowedVariantId = requestVariantIdBySku.get(existingVariant.getSku());
+            if (!Objects.equals(existingVariant.getId(), allowedVariantId)) {
+                throw new BadRequestException("Một hoặc nhiều SKU đã tồn tại trong hệ thống");
+            }
         }
 
         return skus;
@@ -487,6 +607,110 @@ public class AdminProductService implements IAdminProductService {
                         .value(entry.getValue().trim())
                         .build())
                 .toList();
+    }
+
+    /**
+     * Sync danh sách ảnh sản phẩm khi cập nhật.
+     */
+    private void syncProductImages(
+            Product product,
+            String imageUrl,
+            List<String> thumbnailUrls) {
+        // 1. Khởi tạo collection lazy để Hibernate quản lý orphanRemoval trên collection gốc
+        product.getImages().size();
+
+        // 2. Xóa collection cũ và thêm collection mới theo payload
+        product.getImages().clear();
+        product.getImages().addAll(buildProductImages(product, imageUrl, thumbnailUrls));
+    }
+
+    /**
+     * Sync danh sách thông số kỹ thuật khi cập nhật.
+     */
+    private void syncProductSpecifications(
+            Product product,
+            List<AdminProductSpecificationRequest> specifications) {
+        // 1. Khởi tạo collection lazy để Hibernate quản lý orphanRemoval trên collection gốc
+        product.getSpecifications().size();
+
+        // 2. Xóa collection cũ và thêm collection mới theo payload
+        product.getSpecifications().clear();
+        product.getSpecifications().addAll(buildProductSpecifications(product, specifications));
+    }
+
+    /**
+     * Sync danh sách biến thể khi cập nhật sản phẩm.
+     */
+    private void syncProductVariants(
+            Product product,
+            List<ProductVariant> currentVariants,
+            List<AdminProductVariantRequest> requestVariants,
+            List<String> skus) {
+        // 1. Khởi tạo collection lazy để Hibernate quản lý orphanRemoval/cascade trên collection gốc
+        product.getVariants().size();
+
+        Map<Long, ProductVariant> currentVariantById = currentVariants.stream()
+                .collect(Collectors.toMap(ProductVariant::getId, variant -> variant));
+        Set<Long> requestedExistingIds = requestVariants.stream()
+                .map(AdminProductVariantRequest::getId)
+                .filter(id -> id != null && id > 0)
+                .collect(Collectors.toSet());
+
+        // 2. Xóa các variant cũ không còn trong payload
+        product.getVariants().removeIf(variant -> variant.getId() != null
+                && !requestedExistingIds.contains(variant.getId()));
+
+        // 3. Cập nhật variant cũ hoặc thêm variant mới
+        for (int index = 0; index < requestVariants.size(); index++) {
+            AdminProductVariantRequest requestVariant = requestVariants.get(index);
+            ProductVariant variant = resolveVariantForSync(product, currentVariantById, requestVariant);
+
+            variant.setProduct(product);
+            variant.setSku(skus.get(index));
+            variant.setPrice(requestVariant.getPrice());
+            variant.setOriginalPrice(requestVariant.getOriginalPrice());
+            variant.setPercentDiscount(requestVariant.getPercentDiscount() == null ? 0 : requestVariant.getPercentDiscount());
+            variant.setStockQuantity(requestVariant.getStockQuantity());
+            syncVariantAttributes(variant, requestVariant.getAttributes());
+
+            if (variant.getId() == null || variant.getId() <= 0) {
+                product.getVariants().add(variant);
+            }
+        }
+    }
+
+    /**
+     * Lấy variant hiện tại để update hoặc tạo mới nếu request không có ID.
+     */
+    private ProductVariant resolveVariantForSync(
+            Product product,
+            Map<Long, ProductVariant> currentVariantById,
+            AdminProductVariantRequest requestVariant) {
+        // 1. Variant có ID thì cập nhật entity cũ
+        Long variantId = requestVariant.getId();
+        if (variantId != null && variantId > 0) {
+            return currentVariantById.get(variantId);
+        }
+
+        // 2. Variant không có ID là variant mới
+        return ProductVariant.builder()
+                .product(product)
+                .build();
+    }
+
+    /**
+     * Sync attributes của một variant.
+     */
+    private void syncVariantAttributes(ProductVariant variant, Map<String, String> attributes) {
+        // 1. Với variant cũ, clear collection hiện tại để orphanRemoval xóa attribute cũ
+        if (variant.getAttributes() == null) {
+            variant.setAttributes(new ArrayList<>());
+        } else {
+            variant.getAttributes().clear();
+        }
+
+        // 2. Thêm lại attributes theo payload mới
+        variant.getAttributes().addAll(buildVariantAttributes(variant, attributes));
     }
 
     /**
