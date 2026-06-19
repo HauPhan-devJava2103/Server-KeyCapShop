@@ -462,7 +462,10 @@ public class AdminProductService implements IAdminProductService {
         }
 
         // 4. Đánh dấu các media đã thực sự được dùng bởi sản phẩm là ACTIVE
-        medias.forEach(media -> media.setStatus(EMediaStatus.ACTIVE));
+        medias.forEach(media -> {
+            media.setStatus(EMediaStatus.ACTIVE);
+            media.setPendingExpiresAt(null);
+        });
         mediaRepository.saveAll(medias);
     }
 
