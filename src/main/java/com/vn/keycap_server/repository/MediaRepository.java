@@ -18,4 +18,10 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
      * Tìm media theo ID và owner để user không thể sử dụng media của người khác.
      */
     Optional<Media> findByIdAndUploadedById(Long id, Long userId);
+
+    /**
+     * Tìm danh sách media theo secure URL.
+     * Dùng khi FE chỉ gửi URL ảnh trong request tạo/cập nhật sản phẩm.
+     */
+    List<Media> findAllBySecureUrlIn(Collection<String> secureUrls);
 }

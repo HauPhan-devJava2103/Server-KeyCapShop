@@ -146,6 +146,14 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
      * @param id ID sản phẩm cần lấy chi tiết
      * @return Product nếu tồn tại
      */
-    @EntityGraph(attributePaths = { "category", "type", "brand" })
-    Optional<Product> findAdminProductDetailById(Long id);
+        @EntityGraph(attributePaths = { "category", "type", "brand" })
+        Optional<Product> findAdminProductDetailById(Long id);
+
+        /**
+         * Kiểm tra slug sản phẩm đã tồn tại hay chưa.
+         *
+         * @param slug slug cần kiểm tra
+         * @return true nếu slug đã tồn tại
+         */
+        boolean existsBySlug(String slug);
 }

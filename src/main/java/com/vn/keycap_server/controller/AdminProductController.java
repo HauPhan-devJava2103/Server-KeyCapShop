@@ -6,12 +6,15 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vn.keycap_server.dto.ApiResponse;
 import com.vn.keycap_server.dto.PaginationMeta;
 import com.vn.keycap_server.dto.request.product.AdminListProductRequest;
+import com.vn.keycap_server.dto.request.product.CreateAdminProductRequest;
 import com.vn.keycap_server.dto.response.product.AdminProductDetailResponse;
 import com.vn.keycap_server.dto.response.product.AdminProductItemResponse;
 import com.vn.keycap_server.service.adminproduct.IAdminProductService;
@@ -70,6 +73,25 @@ public class AdminProductController {
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Lấy chi tiết sản phẩm quản trị thành công")
+                .data(product)
+                .build());
+    }
+
+    /**
+     * Tạo sản phẩm mới.
+     *
+     * @param request payload tạo sản phẩm từ FE admin
+     * @return ApiResponse chứa chi tiết sản phẩm vừa tạo
+     */
+    @PostMapping
+    public ResponseEntity<ApiResponse> createProduct(@Valid @RequestBody CreateAdminProductRequest request) {
+        // 1. Gọi service để validate nghiệp vụ và lưu sản phẩm mới
+        AdminProductDetailResponse product = adminProductService.createProduct(request);
+
+        // 2. Đóng gói response theo chuẩn chung của hệ thống
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Tạo sản phẩm quản trị thành công")
                 .data(product)
                 .build());
     }

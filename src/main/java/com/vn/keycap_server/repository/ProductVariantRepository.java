@@ -1,6 +1,7 @@
 package com.vn.keycap_server.repository;
 
 import java.util.List;
+import java.util.Collection;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -52,5 +53,13 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
             ORDER BY v.id ASC
             """)
     List<ProductVariant> findByProductIdWithAttributes(@Param("productId") Long productId);
+
+    /**
+     * Kiểm tra có SKU nào đã tồn tại trong hệ thống hay chưa.
+     *
+     * @param skus danh sách SKU cần kiểm tra
+     * @return true nếu có ít nhất một SKU đã tồn tại
+     */
+    boolean existsBySkuIn(Collection<String> skus);
 
 }

@@ -1,8 +1,11 @@
 package com.vn.keycap_server.service.adminproduct;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -20,6 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.vn.keycap_server.dto.request.product.AdminListProductRequest;
+import com.vn.keycap_server.dto.request.product.AdminProductSpecificationRequest;
+import com.vn.keycap_server.dto.request.product.AdminProductVariantRequest;
+import com.vn.keycap_server.dto.request.product.CreateAdminProductRequest;
 import com.vn.keycap_server.dto.response.product.AdminProductDetailResponse;
 import com.vn.keycap_server.dto.response.product.AdminProductItemResponse;
 import com.vn.keycap_server.dto.response.product.ProductOptionResponse;
@@ -33,13 +39,23 @@ import com.vn.keycap_server.modal.ProductImage;
 import com.vn.keycap_server.modal.ProductSpecification;
 import com.vn.keycap_server.modal.ProductVariant;
 import com.vn.keycap_server.modal.ProductVariantAttribute;
+import com.vn.keycap_server.modal.Brand;
+import com.vn.keycap_server.modal.Category;
+import com.vn.keycap_server.modal.Media;
+import com.vn.keycap_server.modal.ProductType;
+import com.vn.keycap_server.repository.BrandRepository;
+import com.vn.keycap_server.repository.CategoryRepository;
+import com.vn.keycap_server.repository.MediaRepository;
 import com.vn.keycap_server.repository.ProductImageRepository;
 import com.vn.keycap_server.repository.ProductRepository;
 import com.vn.keycap_server.repository.ProductSpecificationRepository;
+import com.vn.keycap_server.repository.ProductTypeRepository;
 import com.vn.keycap_server.repository.ProductVariantRepository;
 import com.vn.keycap_server.repository.ReviewRepository;
 import com.vn.keycap_server.repository.projection.ProductRatingSummaryProjection;
 import com.vn.keycap_server.repository.projection.ProductVariantSummaryProjection;
+import com.vn.keycap_server.utils.EMediaStatus;
+import com.vn.keycap_server.utils.EProductStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -53,9 +69,13 @@ import lombok.RequiredArgsConstructor;
 public class AdminProductService implements IAdminProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+    private final ProductTypeRepository productTypeRepository;
+    private final BrandRepository brandRepository;
     private final ProductImageRepository productImageRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ProductSpecificationRepository productSpecificationRepository;
+    private final MediaRepository mediaRepository;
     private final ReviewRepository reviewRepository;
     private final AdminProductMapper adminProductMapper;
 
@@ -140,6 +160,56 @@ public class AdminProductService implements IAdminProductService {
     }
 
     /**
+     * Tạo sản phẩm mới.
+     *
+     * @param request payload tạo sản phẩm từ FE admin
+     * @return chi tiết sản phẩm vừa tạo
+     */
+    @Override
+    @Transactional
+    public AdminProductDetailResponse createProduct(CreateAdminProductRequest request) {
+        // 1. Chuẩn hóa và kiểm tra slug để đảm bảo URL sản phẩm không bị trùng
+        String slug = normalizeSlug(request.getSlug(), request.getName());
+        validateSlugAvailable(slug);
+
+        // 2. Lấy và kiểm tra các phân loại bắt buộc của sản phẩm
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục sản phẩm"));
+        ProductType type = productTypeRepository.findById(request.getTypeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy loại sản phẩm"));
+        Brand brand = brandRepository.findById(request.getBrandId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu"));
+
+        // 3. Kiểm tra và kích hoạt media theo URL ảnh FE gửi lên
+        List<String> imageUrls = collectImageUrls(request);
+        activateMediasByUrls(imageUrls);
+
+        // 4. Chuẩn hóa SKU và kiểm tra trùng SKU trước khi tạo entity
+        List<String> skus = buildAndValidateSkus(slug, request.getVariants());
+
+        // 5. Tạo Product aggregate root cùng các collection con
+        Product product = Product.builder()
+                .name(request.getName().trim())
+                .slug(slug)
+                .description(request.getDescription())
+                .status(EProductStatus.AVAILABLE)
+                .category(category)
+                .type(type)
+                .brand(brand)
+                .build();
+
+        product.setImages(buildProductImages(product, request.getImageUrl(), request.getThumbnailUrl()));
+        product.setSpecifications(buildProductSpecifications(product, request.getSpecifications()));
+        product.setVariants(buildProductVariants(product, request.getVariants(), skus));
+
+        // 6. Lưu product, cascade sẽ lưu images, specifications, variants và attributes
+        Product savedProduct = productRepository.save(product);
+
+        // 7. Trả chi tiết sản phẩm vừa tạo theo đúng contract FE admin
+        return getProductById(savedProduct.getId());
+    }
+
+    /**
      * Chuẩn hóa từ khóa tìm kiếm để repository có thể bỏ qua khi chuỗi rỗng.
      */
     private String normalizeSearch(String search) {
@@ -160,6 +230,263 @@ public class AdminProductService implements IAdminProductService {
         if (productId == null || productId <= 0) {
             throw new BadRequestException("ID sản phẩm không hợp lệ");
         }
+    }
+
+    /**
+     * Chuẩn hóa slug từ request hoặc sinh từ tên sản phẩm nếu FE không gửi.
+     */
+    private String normalizeSlug(String requestSlug, String productName) {
+        // 1. Ưu tiên slug FE gửi, nếu rỗng thì sinh từ tên sản phẩm
+        String source = StringUtils.hasText(requestSlug) ? requestSlug : productName;
+        String normalized = removeVietnameseAccent(source)
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+
+        // 2. Slug sau chuẩn hóa phải còn giá trị
+        if (!StringUtils.hasText(normalized)) {
+            throw new BadRequestException("Slug sản phẩm không hợp lệ");
+        }
+
+        return normalized;
+    }
+
+    /**
+     * Loại bỏ dấu tiếng Việt để sinh slug/SKU ổn định.
+     */
+    private String removeVietnameseAccent(String value) {
+        // 1. Tách dấu Unicode và loại bỏ phần mark
+        String normalized = Normalizer.normalize(value == null ? "" : value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+
+        // 2. Xử lý riêng chữ đ/Đ vì không nằm trong nhóm mark
+        return normalized.replace("đ", "d").replace("Đ", "D");
+    }
+
+    /**
+     * Kiểm tra slug có thể sử dụng cho sản phẩm mới hay không.
+     */
+    private void validateSlugAvailable(String slug) {
+        // 1. Slug là unique trên bảng products
+        if (productRepository.existsBySlug(slug)) {
+            throw new BadRequestException("Slug sản phẩm đã tồn tại");
+        }
+    }
+
+    /**
+     * Gom tất cả URL ảnh sản phẩm từ request.
+     */
+    private List<String> collectImageUrls(CreateAdminProductRequest request) {
+        // 1. Gom ảnh chính và gallery, loại bỏ rỗng và trùng lặp
+        Set<String> urls = new LinkedHashSet<>();
+        if (StringUtils.hasText(request.getImageUrl())) {
+            urls.add(request.getImageUrl().trim());
+        }
+        if (request.getThumbnailUrl() != null) {
+            request.getThumbnailUrl().stream()
+                    .filter(StringUtils::hasText)
+                    .map(String::trim)
+                    .forEach(urls::add);
+        }
+
+        return new ArrayList<>(urls);
+    }
+
+    /**
+     * Chuyển trạng thái media từ PENDING sang ACTIVE dựa trên secureUrl FE gửi.
+     */
+    private void activateMediasByUrls(List<String> imageUrls) {
+        // 1. Không có ảnh thì request đã bị validation chặn, đoạn này chỉ bảo vệ thêm
+        if (imageUrls.isEmpty()) {
+            throw new BadRequestException("Sản phẩm phải có ít nhất một ảnh");
+        }
+
+        // 2. Tìm media trong DB theo secureUrl vì FE chỉ gửi URL ảnh
+        List<Media> medias = mediaRepository.findAllBySecureUrlIn(imageUrls);
+        Map<String, Media> mediaByUrl = medias.stream()
+                .collect(Collectors.toMap(
+                        Media::getSecureUrl,
+                        media -> media,
+                        (first, ignored) -> first));
+
+        // 3. Nếu có URL không tồn tại trong bảng medias thì không cho lưu để tránh ảnh
+        // rác ngoài hệ thống
+        List<String> missingUrls = imageUrls.stream()
+                .filter(url -> !mediaByUrl.containsKey(url))
+                .toList();
+        if (!missingUrls.isEmpty()) {
+            throw new BadRequestException("Một hoặc nhiều ảnh chưa được lưu trong hệ thống media");
+        }
+
+        // 4. Đánh dấu các media đã thực sự được dùng bởi sản phẩm là ACTIVE
+        medias.forEach(media -> media.setStatus(EMediaStatus.ACTIVE));
+        mediaRepository.saveAll(medias);
+    }
+
+    /**
+     * Chuẩn hóa danh sách SKU và kiểm tra trùng trong request lẫn database.
+     */
+    private List<String> buildAndValidateSkus(String productSlug, List<AdminProductVariantRequest> variants) {
+        // 1. Sinh/chuẩn hóa SKU cho từng variant
+        List<String> skus = new ArrayList<>();
+        for (int index = 0; index < variants.size(); index++) {
+            AdminProductVariantRequest variant = variants.get(index);
+            String sku = StringUtils.hasText(variant.getSku())
+                    ? normalizeSku(variant.getSku())
+                    : generateSku(productSlug, variant.getAttributes(), index);
+            skus.add(sku);
+        }
+
+        // 2. Kiểm tra trùng SKU ngay trong request
+        if (new HashSet<>(skus).size() != skus.size()) {
+            throw new BadRequestException("Danh sách biến thể chứa SKU bị trùng");
+        }
+
+        // 3. Kiểm tra trùng SKU với database
+        if (productVariantRepository.existsBySkuIn(skus)) {
+            throw new BadRequestException("Một hoặc nhiều SKU đã tồn tại trong hệ thống");
+        }
+
+        return skus;
+    }
+
+    /**
+     * Chuẩn hóa SKU FE gửi lên.
+     */
+    private String normalizeSku(String sku) {
+        // 1. SKU thống nhất dạng uppercase, bỏ khoảng trắng dư
+        String normalized = sku.trim().toUpperCase();
+        if (!StringUtils.hasText(normalized)) {
+            throw new BadRequestException("SKU biến thể không hợp lệ");
+        }
+        return normalized;
+    }
+
+    /**
+     * Sinh SKU từ slug sản phẩm và attributes khi FE không gửi SKU.
+     */
+    private String generateSku(String productSlug, Map<String, String> attributes, int index) {
+        // 1. Ghép product slug với các giá trị attribute đã chuẩn hóa
+        String attributePart = attributes == null ? ""
+                : attributes.values().stream()
+                        .filter(StringUtils::hasText)
+                        .map(this::removeVietnameseAccent)
+                        .map(value -> value.toUpperCase().replaceAll("[^A-Z0-9]+", "-").replaceAll("(^-|-$)", ""))
+                        .filter(StringUtils::hasText)
+                        .collect(Collectors.joining("-"));
+
+        // 2. Nếu variant không có attribute rõ ràng thì dùng số thứ tự để tránh SKU
+        // rỗng
+        String base = productSlug.toUpperCase().replace("-", "_");
+        return StringUtils.hasText(attributePart)
+                ? base + "-" + attributePart
+                : base + "-" + (index + 1);
+    }
+
+    /**
+     * Tạo danh sách ảnh sản phẩm từ request.
+     */
+    private List<ProductImage> buildProductImages(Product product, String imageUrl, List<String> thumbnailUrls) {
+        // 1. Ảnh chính luôn được lưu là primary và sortOrder = 0
+        List<ProductImage> images = new ArrayList<>();
+        images.add(ProductImage.builder()
+                .product(product)
+                .url(imageUrl.trim())
+                .primary(true)
+                .sortOrder(0)
+                .build());
+
+        // 2. Gallery được lưu sau ảnh chính, bỏ qua URL trùng ảnh chính
+        if (thumbnailUrls != null) {
+            int sortOrder = 1;
+            Set<String> usedUrls = new LinkedHashSet<>();
+            usedUrls.add(imageUrl.trim());
+
+            for (String thumbnailUrl : thumbnailUrls) {
+                if (!StringUtils.hasText(thumbnailUrl)) {
+                    continue;
+                }
+                String url = thumbnailUrl.trim();
+                if (!usedUrls.add(url)) {
+                    continue;
+                }
+                images.add(ProductImage.builder()
+                        .product(product)
+                        .url(url)
+                        .primary(false)
+                        .sortOrder(sortOrder++)
+                        .build());
+            }
+        }
+
+        return images;
+    }
+
+    /**
+     * Tạo danh sách thông số kỹ thuật từ request.
+     */
+    private List<ProductSpecification> buildProductSpecifications(
+            Product product,
+            List<AdminProductSpecificationRequest> specifications) {
+        // 1. Nếu FE không gửi specifications thì lưu danh sách rỗng
+        if (specifications == null || specifications.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2. Chuyển từng specification sang entity và gán sortOrder theo thứ tự FE gửi
+        List<ProductSpecification> result = new ArrayList<>();
+        for (int index = 0; index < specifications.size(); index++) {
+            AdminProductSpecificationRequest specification = specifications.get(index);
+            result.add(ProductSpecification.builder()
+                    .product(product)
+                    .name(specification.getName().trim())
+                    .value(specification.getValue().trim())
+                    .sortOrder(index)
+                    .build());
+        }
+        return result;
+    }
+
+    /**
+     * Tạo danh sách biến thể sản phẩm từ request.
+     */
+    private List<ProductVariant> buildProductVariants(
+            Product product,
+            List<AdminProductVariantRequest> variants,
+            List<String> skus) {
+        // 1. Map từng variant request sang entity và tạo attributes con
+        List<ProductVariant> result = new ArrayList<>();
+        for (int index = 0; index < variants.size(); index++) {
+            AdminProductVariantRequest request = variants.get(index);
+            ProductVariant variant = ProductVariant.builder()
+                    .product(product)
+                    .sku(skus.get(index))
+                    .price(request.getPrice())
+                    .originalPrice(request.getOriginalPrice())
+                    .percentDiscount(request.getPercentDiscount() == null ? 0 : request.getPercentDiscount())
+                    .stockQuantity(request.getStockQuantity())
+                    .build();
+
+            variant.setAttributes(buildVariantAttributes(variant, request.getAttributes()));
+            result.add(variant);
+        }
+        return result;
+    }
+
+    /**
+     * Tạo danh sách thuộc tính cho một biến thể.
+     */
+    private List<ProductVariantAttribute> buildVariantAttributes(
+            ProductVariant variant,
+            Map<String, String> attributes) {
+        // 1. Chuyển map attributes từ FE sang danh sách entity con
+        return attributes.entrySet().stream()
+                .map(entry -> ProductVariantAttribute.builder()
+                        .variant(variant)
+                        .name(entry.getKey().trim())
+                        .value(entry.getValue().trim())
+                        .build())
+                .toList();
     }
 
     /**
