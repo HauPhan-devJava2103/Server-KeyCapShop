@@ -3,6 +3,7 @@ package com.vn.keycap_server.service.adminproduct;
 import org.springframework.data.domain.Page;
 
 import com.vn.keycap_server.dto.request.product.AdminListProductRequest;
+import com.vn.keycap_server.dto.response.product.AdminProductDetailResponse;
 import com.vn.keycap_server.dto.response.product.AdminProductItemResponse;
 
 /**
@@ -18,4 +19,12 @@ public interface IAdminProductService {
      * @return trang dữ liệu sản phẩm admin
      */
     Page<AdminProductItemResponse> getProducts(AdminListProductRequest request);
+
+    /**
+     * Lấy chi tiết một sản phẩm cho form admin.
+     *
+     * @param productId ID sản phẩm cần lấy chi tiết
+     * @return chi tiết sản phẩm theo contract FE admin
+     */
+    AdminProductDetailResponse getProductById(Long productId);
 }

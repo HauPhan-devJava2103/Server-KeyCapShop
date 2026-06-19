@@ -37,4 +37,20 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
             """)
     List<ProductVariantSummaryProjection> findVariantSummariesByProductIds(@Param("productIds") List<Long> productIds);
 
+    /**
+     * Lấy danh sách biến thể của một sản phẩm kèm attributes.
+     * Dùng cho màn chi tiết admin để dựng lại option và bảng giá biến thể.
+     *
+     * @param productId ID sản phẩm cần lấy biến thể
+     * @return danh sách biến thể đã fetch attributes
+     */
+    @Query("""
+            SELECT DISTINCT v
+            FROM ProductVariant v
+            LEFT JOIN FETCH v.attributes
+            WHERE v.product.id = :productId
+            ORDER BY v.id ASC
+            """)
+    List<ProductVariant> findByProductIdWithAttributes(@Param("productId") Long productId);
+
 }

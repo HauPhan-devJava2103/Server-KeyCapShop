@@ -32,4 +32,21 @@ public interface ProductImageRepository extends JpaRepository<ProductImage, Long
                      image.id
             """)
     List<ProductImage> findDisplayImagesByProductIds(@Param("productIds") List<Long> productIds);
+
+    /**
+     * Lấy toàn bộ ảnh của một sản phẩm theo thứ tự hiển thị.
+     * Ảnh primary được đưa lên trước để service chọn làm ảnh đại diện.
+     *
+     * @param productId ID sản phẩm cần lấy ảnh
+     * @return danh sách ảnh đã sắp xếp
+     */
+    @Query("""
+            SELECT image
+            FROM ProductImage image
+            WHERE image.product.id = :productId
+            ORDER BY CASE WHEN image.primary = true THEN 0 ELSE 1 END,
+                     image.sortOrder,
+                     image.id
+            """)
+    List<ProductImage> findDisplayImagesByProductId(@Param("productId") Long productId);
 }
