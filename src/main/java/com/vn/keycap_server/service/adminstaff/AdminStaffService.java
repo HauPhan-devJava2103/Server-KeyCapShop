@@ -200,13 +200,7 @@ public class AdminStaffService implements IAdminStaffService {
             throw new BadRequestException("Không thể tự xóa tài khoản đang đăng nhập");
         }
 
-        // 3. Chặn xóa nếu user đã từng phát sinh đơn hàng để không phá vỡ dữ liệu lịch
-        // sử.
-        if (orderRepository.existsByUserId(staffId)) {
-            throw new BadRequestException("Không thể xóa nhân viên đã phát sinh dữ liệu đơn hàng");
-        }
-
-        // 4. Xóa user staff; token/address sẽ được dọn theo cascade hiện có trên User.
+        // 3. Xóa user staff; token/address sẽ được dọn theo cascade hiện có trên User.
         userRepository.delete(staff);
     }
 
