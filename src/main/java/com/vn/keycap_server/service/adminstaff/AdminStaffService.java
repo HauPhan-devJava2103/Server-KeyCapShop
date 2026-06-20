@@ -23,6 +23,7 @@ import com.vn.keycap_server.mapper.AdminStaffMapper;
 import com.vn.keycap_server.modal.User;
 import com.vn.keycap_server.repository.OrderRepository;
 import com.vn.keycap_server.repository.UserRepository;
+import com.vn.keycap_server.service.mail.IMailService;
 import com.vn.keycap_server.utils.ERole;
 
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class AdminStaffService implements IAdminStaffService {
     private final OrderRepository orderRepository;
     private final AdminStaffMapper adminStaffMapper;
     private final PasswordEncoder passwordEncoder;
+    private final IMailService mailService;
 
     /**
      * Lấy danh sách nhân viên có phân trang và tìm kiếm theo tên, email hoặc số
@@ -109,6 +111,7 @@ public class AdminStaffService implements IAdminStaffService {
         }
 
         // 3. Tạo user role STAFF và set mật khẩu ngẫu nhiên đã mã hóa.
+        String temporaryPassword = generateTemporaryPassword();
         User staff = User.builder()
                 .fullName(fullName)
                 .email(email)
@@ -116,12 +119,15 @@ public class AdminStaffService implements IAdminStaffService {
                 .dateOfBirth(request.getDob())
                 .gender(request.getGender())
                 .salary(salary)
-                .password(passwordEncoder.encode(generateTemporaryPassword()))
+                .password(passwordEncoder.encode(temporaryPassword))
                 .role(ERole.STAFF)
                 .build();
 
-        // 4. Lưu nhân viên và trả response đúng field FE đang dùng.
+        // 4. Lưu nhân viên trước, sau đó gửi email để nhân viên có thông tin đăng nhập.
         User savedStaff = userRepository.save(staff);
+        mailService.sendStaffAccountEmail(savedStaff.getEmail(), savedStaff.getFullName(), temporaryPassword);
+
+        // 5. Trả response đúng field FE đang dùng.
         return adminStaffMapper.toAdminStaffResponse(savedStaff);
     }
 

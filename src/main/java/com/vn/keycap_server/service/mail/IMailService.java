@@ -8,4 +8,6 @@ public interface IMailService {
     void sendOtpEmail(String toEmail, String otp);
 
     void sendOrderConfirmation(String toEmail, Long orderId, BigDecimal totalAmount, EPaymentMethod paymentMethod);
+
+    void sendStaffAccountEmail(String toEmail, String staffName, String password);
 }

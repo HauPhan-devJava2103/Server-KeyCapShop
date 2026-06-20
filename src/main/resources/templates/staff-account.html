@@ -1,0 +1,223 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Thông tin tài khoản nhân viên</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f3f4f6;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1f2937;
+    ">
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      style="background-color: #f3f4f6; padding: 32px 16px">
+      <tr>
+        <td align="center">
+          <table
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              width: 100%;
+              max-width: 600px;
+              background-color: #ffffff;
+              border-collapse: collapse;
+              border: 1px solid #e5e7eb;
+            ">
+            <!-- Header -->
+            <tr>
+              <td style="padding: 28px 32px; border-bottom: 1px solid #e5e7eb">
+                <h1
+                  style="
+                    margin: 0;
+                    font-size: 24px;
+                    line-height: 32px;
+                    color: #111827;
+                    font-weight: 700;
+                  ">
+                  KeyCap Shop
+                </h1>
+                <p
+                  style="
+                    margin: 6px 0 0;
+                    font-size: 14px;
+                    line-height: 20px;
+                    color: #6b7280;
+                  ">
+                  Thông tin tài khoản nhân viên
+                </p>
+              </td>
+            </tr>
+
+            <!-- Main content -->
+            <tr>
+              <td style="padding: 32px">
+                <h2
+                  style="
+                    margin: 0 0 12px;
+                    font-size: 22px;
+                    line-height: 30px;
+                    color: #111827;
+                    font-weight: 700;
+                  ">
+                  Chào <span th:text="${staffName}">nhân viên</span>,
+                </h2>
+
+                <p
+                  style="
+                    margin: 0 0 24px;
+                    font-size: 15px;
+                    line-height: 24px;
+                    color: #4b5563;
+                  ">
+                  Tài khoản nhân viên của bạn tại <strong>KeyCap Shop</strong> đã được
+                  tạo thành công. Vui lòng dùng thông tin bên dưới để đăng nhập vào
+                  hệ thống quản trị.
+                </p>
+
+                <!-- Account summary -->
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="
+                    border-collapse: collapse;
+                    margin: 0 0 24px;
+                    border: 1px solid #e5e7eb;
+                  ">
+                  <tr>
+                    <td
+                      colspan="2"
+                      style="
+                        padding: 14px 16px;
+                        background-color: #f9fafb;
+                        border-bottom: 1px solid #e5e7eb;
+                      ">
+                      <strong style="font-size: 14px; color: #111827"
+                        >Thông tin đăng nhập</strong
+                      >
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td
+                      style="
+                        width: 35%;
+                        padding: 14px 16px;
+                        border-bottom: 1px solid #e5e7eb;
+                        font-size: 14px;
+                        color: #6b7280;
+                      ">
+                      Email
+                    </td>
+                    <td
+                      style="
+                        padding: 14px 16px;
+                        border-bottom: 1px solid #e5e7eb;
+                        font-size: 14px;
+                        color: #111827;
+                        font-weight: 700;
+                      "
+                      th:text="${email}">
+                      staff@example.com
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td
+                      style="
+                        width: 35%;
+                        padding: 14px 16px;
+                        font-size: 14px;
+                        color: #6b7280;
+                      ">
+                      Mật khẩu
+                    </td>
+                    <td
+                      style="
+                        padding: 14px 16px;
+                        font-size: 14px;
+                        color: #111827;
+                        font-weight: 700;
+                        letter-spacing: 0.04em;
+                      "
+                      th:text="${password}">
+                      temporary-password
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Security note -->
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="
+                    border-collapse: collapse;
+                    margin: 0 0 24px;
+                    background-color: #f9fafb;
+                    border-left: 4px solid #111827;
+                  ">
+                  <tr>
+                    <td style="padding: 16px">
+                      <p
+                        style="
+                          margin: 0;
+                          font-size: 14px;
+                          line-height: 22px;
+                          color: #374151;
+                        ">
+                        Vì lý do bảo mật, bạn không nên chia sẻ email này cho người khác.
+                        Sau khi đăng nhập lần đầu, hãy liên hệ quản trị viên nếu cần thay đổi
+                        thông tin tài khoản hoặc đặt lại mật khẩu.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 14px;
+                    line-height: 22px;
+                    color: #4b5563;
+                  ">
+                  Trân trọng,<br />
+                  <strong>Đội ngũ KeyCap Shop</strong>
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td
+                style="
+                  padding: 20px 32px;
+                  background-color: #f9fafb;
+                  border-top: 1px solid #e5e7eb;
+                ">
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 12px;
+                    line-height: 18px;
+                    color: #6b7280;
+                    text-align: center;
+                  ">
+                  Email này được gửi tự động từ hệ thống KeyCap Shop. Vui lòng
+                  không trả lời trực tiếp email này.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

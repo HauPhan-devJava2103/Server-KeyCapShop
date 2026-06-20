@@ -74,4 +74,27 @@ public class MailService implements IMailService {
         }
         mailSender.send(message);
     }
+
+    @Override
+    public void sendStaffAccountEmail(String toEmail, String staffName, String password) {
+        Context context = new Context();
+        context.setVariable("staffName", staffName);
+        context.setVariable("email", toEmail);
+        context.setVariable("password", password);
+
+        String processHTML = templateEngine.process("staff-account", context);
+
+        MimeMessage message = mailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("KeyCap Shop - Thông tin tài khoản nhân viên");
+            helper.setText(processHTML, true);
+
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Gửi email thông tin tài khoản nhân viên thất bại", e);
+        }
+    }
 }
