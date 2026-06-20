@@ -2,6 +2,7 @@ package com.vn.keycap_server.modal;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vn.keycap_server.utils.EGender;
@@ -44,6 +45,10 @@ public class User extends AbstractEntity {
 
     @Column(name = "phone")
     private String phone;
+
+    // Mới thêm
+    @Column(name = "salary")
+    private BigDecimal salary;
 
     @Column(name = "email", unique = true)
     private String email;
