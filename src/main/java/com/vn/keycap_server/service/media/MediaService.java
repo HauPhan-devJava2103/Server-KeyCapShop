@@ -1,6 +1,7 @@
 package com.vn.keycap_server.service.media;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 public class MediaService implements IMediaService {
 
     private static final String TEMPORARY_TAG = "tmp";
+    private static final long PENDING_MEDIA_TTL_HOURS = 12;
 
     private final Cloudinary cloudinary;
     private final CloudinaryProperties cloudinaryProperties;
@@ -89,6 +91,7 @@ public class MediaService implements IMediaService {
         Media media = mediaMapper.toMedia(request);
         media.setResourceType(EMediaResourceType.valueOf(request.getResourceType().toUpperCase()));
         media.setStatus(EMediaStatus.PENDING);
+        media.setPendingExpiresAt(LocalDateTime.now().plusHours(PENDING_MEDIA_TTL_HOURS));
         media.setUploadedBy(user);
         return media;
     }

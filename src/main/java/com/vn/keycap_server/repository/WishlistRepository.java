@@ -39,4 +39,13 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     @Transactional
     @Query("delete from Wishlist w where w.product.id = :productId and w.user.id = :userId")
     void deleteByProductIdAndUserId(@Param("productId") Long productId, @Param("userId") Long userId);
+
+    /**
+     * Xóa toàn bộ wishlist đang tham chiếu đến một sản phẩm.
+     *
+     * @param productId ID sản phẩm cần dọn khỏi wishlist
+     */
+    @Modifying
+    @Query("delete from Wishlist w where w.product.id = :productId")
+    void deleteByProductId(@Param("productId") Long productId);
 }

@@ -1,5 +1,7 @@
 package com.vn.keycap_server.modal;
 
+import java.time.LocalDateTime;
+
 import com.vn.keycap_server.utils.EMediaResourceType;
 import com.vn.keycap_server.utils.EMediaStatus;
 
@@ -54,6 +56,9 @@ public class Media extends AbstractEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private EMediaStatus status;
+
+    @Column(name = "pending_expires_at")
+    private LocalDateTime pendingExpiresAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by", nullable = false)

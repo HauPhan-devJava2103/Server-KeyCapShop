@@ -64,6 +64,7 @@ public class UserService implements IUserService {
         if (request.getAvatarMediaId() != null) {
             Media avatarMedia = getOwnedAvatarMedia(request.getAvatarMediaId(), userId);
             avatarMedia.setStatus(EMediaStatus.ACTIVE);
+            avatarMedia.setPendingExpiresAt(null);
             user.setAvatarMedia(avatarMedia);
 
             // Chỉ bỏ tag tmp sau khi transaction DB commit để Cloudinary không lệch trạng

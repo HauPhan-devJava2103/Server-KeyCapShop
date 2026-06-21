@@ -32,4 +32,12 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
         @Query("SELECT oi FROM OrderItem oi JOIN FETCH oi.variant WHERE oi.order.id = :orderId")
         List<OrderItem> findByOrderId(@Param("orderId") Long orderId);
+
+        /**
+         * Kiểm tra sản phẩm đã phát sinh đơn hàng hay chưa thông qua các biến thể.
+         *
+         * @param productId ID sản phẩm cần kiểm tra
+         * @return true nếu có order item tham chiếu đến biến thể của sản phẩm
+         */
+        boolean existsByVariantProductId(Long productId);
 }
