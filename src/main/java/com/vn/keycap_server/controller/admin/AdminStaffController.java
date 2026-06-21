@@ -1,4 +1,4 @@
-package com.vn.keycap_server.controller;
+package com.vn.keycap_server.controller.admin;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;

@@ -78,7 +78,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
      * Lấy ID sản phẩm liên quan, loại trừ sản phẩm đầu vào và sản phẩm hết hàng.
      */
     @Query("""
-            SELECT DISTINCT p.id
+            SELECT p.id
             FROM Product p
             WHERE p.id NOT IN :sourceIds
               AND p.status = :status

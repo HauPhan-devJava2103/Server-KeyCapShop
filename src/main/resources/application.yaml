@@ -91,7 +91,7 @@ paypal:
   client-id: ${PAYPAL_CLIENT_ID}
   client-secret: ${PAYPAL_CLIENT_SECRET}
   api-url: ${PAYPAL_API_URL}
-  redirect-url: ${PAYPAL_REDIRECT_URI}
+  redirect-url: ${PAYPAL_REDIRECT_URL}
 
 shipping:
   ghn:

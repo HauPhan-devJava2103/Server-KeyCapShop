@@ -157,12 +157,12 @@ public class ProductController {
     }
 
     /**
-     * GET /products/related?productIds=1&productIds=2&size=10
+     * GET /products/related?productIds[]=1&productIds[]=2&size=10
      * Mô tả: Lấy tối đa size sản phẩm liên quan đến danh sách sản phẩm đầu vào.
      */
     @GetMapping("/related")
     public ResponseEntity<ApiResponse> getRelatedProducts(
-            @RequestParam List<Long> productIds,
+            @RequestParam("productIds[]") List<Long> productIds,
             @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
