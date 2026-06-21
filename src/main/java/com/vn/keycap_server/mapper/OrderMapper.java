@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.vn.keycap_server.dto.response.order.OrderAdminResponse;
 import org.springframework.stereotype.Component;
 
 import com.vn.keycap_server.dto.response.order.OrderItemResponse;
@@ -44,6 +45,20 @@ public class OrderMapper {
         return orders.stream()
                 .map(this::toOrderResponse)
                 .collect(Collectors.toList());
+    }
+
+    public OrderAdminResponse toOrderAdminResponse(Order order) {
+        return OrderAdminResponse.builder()
+                .id(order.getId())
+                .totalAmount(order.getTotalAmount())
+                .shippingFee(order.getShippingFee())
+                .status(order.getStatus())
+                .paymentMethod(order.getPaymentMethod())
+                .createdAt(order.getCreatedAt())
+                .address(order.getAddress().getFullAddress())
+                .statusHistory(mapStatusHistories(order.getStatusHistory()))
+                .items(mapOrderItems(order.getItems()))
+                .build();
     }
 
     // OrderItem mapping
@@ -107,4 +122,5 @@ public class OrderMapper {
                         .build())
                 .collect(Collectors.toList());
     }
+
 }

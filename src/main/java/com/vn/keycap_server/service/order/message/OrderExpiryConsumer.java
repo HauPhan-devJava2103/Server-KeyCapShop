@@ -8,14 +8,13 @@ import org.springframework.stereotype.Component;
 import com.vn.keycap_server.configuration.rabbitmq.RabbitMQConfig;
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.modal.OrderItem;
-import com.vn.keycap_server.modal.ProductVariant;
+
 import com.vn.keycap_server.repository.OrderItemRepository;
 import com.vn.keycap_server.repository.OrderRepository;
-import com.vn.keycap_server.repository.ProductVariantRepository;
+import com.vn.keycap_server.service.order.OrderStockService;
 import com.vn.keycap_server.service.orderhistorystatus.OrderHistoryService;
 import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.EPaymentStatus;
-import com.vn.keycap_server.utils.EProductStatus;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +26,8 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderExpiryConsumer {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
-    private final ProductVariantRepository productVariantRepository;
     private final OrderHistoryService orderHistoryService;
+    private final OrderStockService orderStockService;
 
     @RabbitListener(queues = RabbitMQConfig.CHECK_QUEUE)
     @Transactional
@@ -49,20 +48,8 @@ public class OrderExpiryConsumer {
 
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
 
-        for (OrderItem item : orderItems) {
-            ProductVariant variant = item.getVariant();
-            variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
-
-            if (variant.getProduct().getStatus().equals(EProductStatus.UNAVAILABLE)) {
-                variant.getProduct().setStatus(EProductStatus.AVAILABLE);
-            }
-
-        }
-
-        List<ProductVariant> variants = orderItems.stream()
-                .map(OrderItem::getVariant)
-                .toList();
-        productVariantRepository.saveAll(variants);
+        // Hoàn stock
+        orderStockService.restockOrderItems(orderItems);
 
         order.setStatus(EOrderStatus.CANCELLED);
         order.setPaymentStatus(EPaymentStatus.FAILED);
