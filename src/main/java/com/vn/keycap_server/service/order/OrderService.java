@@ -65,6 +65,7 @@ public class OrderService implements IOrderService {
 
         private final OrderHistoryService orderHistoryService;
         private final GhnShippingService ghnShippingService;
+        private final OrderStockService orderStockService;
 
         private final List<IPaymentStrategy> paymentStrategies;
 
@@ -351,11 +352,7 @@ public class OrderService implements IOrderService {
                                 userId);
 
                 // Restock Item
-                for (OrderItem item : order.getItems()) {
-                        ProductVariant variant = item.getVariant();
-                        variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
-                }
-                productVariantRepository.saveAll(order.getItems().stream().map(OrderItem::getVariant).toList());
+                orderStockService.restockOrderItems(order.getItems());
 
         }
 
