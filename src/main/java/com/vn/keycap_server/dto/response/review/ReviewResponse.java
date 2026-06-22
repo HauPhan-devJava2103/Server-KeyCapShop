@@ -19,4 +19,16 @@ public class ReviewResponse {
     private String content;
     private LocalDate createdAt;
     private List<String> imageUrls;
+    private ReplyResponse reply;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ReplyResponse {
+        private Long id;
+        private String adminName;
+        private String content;
+        private LocalDate createdAt;
+    }
 }

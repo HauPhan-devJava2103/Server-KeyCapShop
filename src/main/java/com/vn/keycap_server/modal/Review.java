@@ -19,16 +19,6 @@ import java.util.List;
 @ToString(exclude = { "product", "user" }) // Tránh lỗi vòng lặp
 public class Review extends AbstractEntity {
 
-    // Liên kết với sản phẩm được đánh giá
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
-
-    // Liên kết với người dùng đã viết đánh giá
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
     // Số sao đánh giá (từ 1 đến 5)
     @Column(name = "rating", nullable = false)
     private Integer rating;
@@ -46,4 +36,23 @@ public class Review extends AbstractEntity {
     )
     @Column(name = "image_url") // Tên cột lưu link ảnh
     private List<String> imageUrls;
+
+    // Relationship
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = true)
+    private Order order;
+
+    // Liên kết với sản phẩm được đánh giá
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    // Liên kết với người dùng đã viết đánh giá
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    // Phản hồi của admin/staff
+    @OneToOne(mappedBy = "review", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ReviewReply reply;
 }

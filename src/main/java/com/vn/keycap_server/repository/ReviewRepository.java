@@ -11,14 +11,16 @@ import org.springframework.stereotype.Repository;
 import com.vn.keycap_server.modal.Review;
 import com.vn.keycap_server.repository.projection.ProductRatingSummaryProjection;
 
+import java.util.List;
+
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.product.id = :productId")
     Double getAverageRatingByProductId(@Param("productId") Long productId);
 
-    // Fetch avatarMedia cùng user để map avatar review mà không phát sinh N+1 query.
-    @EntityGraph(attributePaths = { "user", "user.avatarMedia" })
+    // Fetch avatarMedia cùng user, reply và reply.user để tránh phát sinh N+1 query.
+    @EntityGraph(attributePaths = { "user", "user.avatarMedia", "reply", "reply.user" })
     Page<Review> findByProduct_Id(Long productId, Pageable pageable);
 
     /**
@@ -35,5 +37,13 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             WHERE r.product.id IN :productIds
             GROUP BY r.product.id
             """)
-    java.util.List<ProductRatingSummaryProjection> findRatingSummariesByProductIds(@Param("productIds") java.util.List<Long> productIds);
+    List<ProductRatingSummaryProjection> findRatingSummariesByProductIds(@Param("productIds") List<Long> productIds);
+
+    // Tìm các review của một đơn hàng
+    List<Review> findByOrder_Id(Long orderId);
+
+    // Kiểm tra sản phẩm trong đơn hàng đã được đánh giá chưa
+    boolean existsByOrder_IdAndProduct_Id(Long orderId, Long productId);
+
+
 }

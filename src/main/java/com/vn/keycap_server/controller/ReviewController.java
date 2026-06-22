@@ -1,11 +1,12 @@
 package com.vn.keycap_server.controller;
 
+import com.vn.keycap_server.dto.request.review.CreateReviewRequest;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
 
 import com.vn.keycap_server.dto.ApiResponse;
 import com.vn.keycap_server.dto.PaginationMeta;
@@ -45,6 +46,18 @@ public class ReviewController {
                 .message("Lấy danh sách đánh giá thành công")
                 .data(resultPage.getContent())
                 .pagination(meta)
+                .build());
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse> createReviews(
+            @RequestBody @Valid CreateReviewRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        reviewService.createReviews(request, userId);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Gửi đánh giá sản phẩm thành công!")
                 .build());
     }
 }

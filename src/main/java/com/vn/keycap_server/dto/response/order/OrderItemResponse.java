@@ -20,6 +20,8 @@ public class OrderItemResponse {
     private Integer quantity;
     private BigDecimal price;
     private List<AttributeResponse> attributes;
+    private boolean isReviewed;
+
 
     @Data
     @Builder

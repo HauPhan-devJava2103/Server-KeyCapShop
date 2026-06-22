@@ -4,9 +4,12 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.vn.keycap_server.dto.response.order.*;
+import com.vn.keycap_server.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,12 +18,7 @@ import com.vn.keycap_server.dto.request.order.CheckoutItemRequest;
 import com.vn.keycap_server.dto.request.order.CheckoutRequest;
 import com.vn.keycap_server.dto.request.order.PrepareCheckoutRequestWrapper;
 import com.vn.keycap_server.dto.request.order.PrepareCheckoutRequestWrapper.PrepareCheckoutRequest;
-import com.vn.keycap_server.dto.response.order.CheckoutItemResponse;
 import com.vn.keycap_server.dto.response.order.CheckoutItemResponse.PrepareProductInfo;
-import com.vn.keycap_server.dto.response.order.CheckoutResponse;
-import com.vn.keycap_server.dto.response.order.CheckoutResult;
-import com.vn.keycap_server.dto.response.order.OrderResponse;
-import com.vn.keycap_server.dto.response.order.PrepareCheckoutResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.mapper.OrderMapper;
 import com.vn.keycap_server.modal.Address;
@@ -31,13 +29,6 @@ import com.vn.keycap_server.modal.ProductImage;
 import com.vn.keycap_server.modal.ProductVariant;
 import com.vn.keycap_server.modal.ProductVariantAttribute;
 import com.vn.keycap_server.modal.User;
-import com.vn.keycap_server.repository.AddressRepository;
-import com.vn.keycap_server.repository.CartItemRepository;
-import com.vn.keycap_server.repository.OrderItemRepository;
-import com.vn.keycap_server.repository.OrderRepository;
-import com.vn.keycap_server.repository.ProductRepository;
-import com.vn.keycap_server.repository.ProductVariantRepository;
-import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.service.order.message.OrderExpiryProducer;
 import com.vn.keycap_server.service.orderhistorystatus.OrderHistoryService;
 import com.vn.keycap_server.service.payment.IPaymentStrategy;
@@ -62,6 +53,7 @@ public class OrderService implements IOrderService {
         private final OrderItemRepository orderItemRepository;
         private final CartItemRepository cartItemRepository;
         private final ProductRepository productRepository;
+        private final ReviewRepository reviewRepository;
 
         private final OrderHistoryService orderHistoryService;
         private final GhnShippingService ghnShippingService;
@@ -326,8 +318,16 @@ public class OrderService implements IOrderService {
                 if (!order.getUser().getId().equals(userId)) {
                         throw new BadRequestException("Đơn hàng không thuộc người dùng này");
                 }
-                return orderMapper.toOrderResponse(order);
+                OrderResponse response = orderMapper.toOrderResponse(order);
 
+                Set<Long> reviewedProductIds = reviewRepository.findByOrder_Id(orderId).stream()
+                        .map(r -> r.getProduct().getId())
+                        .collect(Collectors.toSet());
+                // 3. Set isReviewed cho từng item
+                for (OrderItemResponse item : response.getItems()) {
+                        item.setReviewed(reviewedProductIds.contains(item.getProductId()));
+                }
+                return response;
         }
 
         @Override
