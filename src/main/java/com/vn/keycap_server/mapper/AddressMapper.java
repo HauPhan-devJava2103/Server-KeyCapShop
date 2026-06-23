@@ -2,21 +2,23 @@ package com.vn.keycap_server.mapper;
 
 import java.util.List;
 
-import com.vn.keycap_server.dto.request.address.CreateAddressRequest;
+import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 
+import com.vn.keycap_server.dto.request.address.CreateAddressRequest;
 import com.vn.keycap_server.dto.response.address.AddressResponse;
 import com.vn.keycap_server.dto.response.address.LocationInfoResponse;
 import com.vn.keycap_server.modal.Address;
 
 @Component
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true))
 public interface AddressMapper {
 
+    @Mapping(target = "fullName", source = "recipientName")
     @Mapping(target = "province", source = "address", qualifiedByName = "toProvince")
     @Mapping(target = "district", source = "address", qualifiedByName = "toDistrict")
     @Mapping(target = "ward", source = "address", qualifiedByName = "toWard")
@@ -24,11 +26,11 @@ public interface AddressMapper {
 
     List<AddressResponse> toAddressResponseList(List<Address> addresses);
 
-    // @Mapping(target = "id", ignore = true)
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
     Address toAddress(CreateAddressRequest request);
 
-    // @Mapping(target = "id", ignore = true)
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
     void updateAddressFromRequest(CreateAddressRequest request, @MappingTarget Address address);
 
