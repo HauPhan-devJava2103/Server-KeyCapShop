@@ -1,10 +1,12 @@
 package com.vn.keycap_server.service.orderhistorystatus;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import com.vn.keycap_server.modal.Order;
 import com.vn.keycap_server.modal.OrderStatusHistory;
 import com.vn.keycap_server.repository.OrderStatusHistoryRepository;
+import com.vn.keycap_server.service.order.event.OrderStatusChangedEvent;
 import com.vn.keycap_server.utils.EOrderStatus;
 
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 public class OrderHistoryService implements IOderHistoryService {
 
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void recordStatusChange(Order order, EOrderStatus fromStatus, EOrderStatus toStatus, String note,
@@ -25,6 +28,10 @@ public class OrderHistoryService implements IOderHistoryService {
         history.setNote(note);
         history.setCreatedBy(createdBy);
         orderStatusHistoryRepository.save(history);
+
+        // Publish event
+        eventPublisher.publishEvent(
+                new OrderStatusChangedEvent(this, order.getId(), fromStatus, toStatus));
     }
 
 }
