@@ -24,11 +24,11 @@ public interface AddressMapper {
 
     List<AddressResponse> toAddressResponseList(List<Address> addresses);
 
-    @Mapping(target = "id", ignore = true)
+    // @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
     Address toAddress(CreateAddressRequest request);
 
-    @Mapping(target = "id", ignore = true)
+    // @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
     void updateAddressFromRequest(CreateAddressRequest request, @MappingTarget Address address);
 

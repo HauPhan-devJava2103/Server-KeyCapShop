@@ -149,7 +149,7 @@ public class ReviewService implements IReviewService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BadRequestException("Không tìm thấy đơn hàng"));
 
-        if (!order.getUser().getId().equals(userId)) {
+        if (order.getUser() == null || !order.getUser().getId().equals(userId)) {
             throw new BadRequestException("Bạn không có quyền xem đánh giá của đơn hàng này");
         }
 
@@ -157,7 +157,7 @@ public class ReviewService implements IReviewService {
 
         return reviews.stream()
                 .map(r -> AvailableReviewResponse.builder()
-                        .productId(r.getProduct().getId())
+                        .productId(r.getProduct() != null ? r.getProduct().getId() : null)
                         .rating(r.getRating())
                         .content(r.getContent())
                         .createdAt(r.getCreatedAt())
