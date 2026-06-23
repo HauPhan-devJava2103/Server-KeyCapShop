@@ -55,7 +55,8 @@ public class ReviewController {
     public ResponseEntity<ApiResponse> createReviews(
             @RequestBody @Valid CreateReviewRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        Long userId = jwt.getClaim("userId");
+        Object claim = jwt.getClaim("userId");
+        Long userId = claim instanceof Number ? ((Number) claim).longValue() : Long.valueOf(claim.toString());
         reviewService.createReviews(request, userId);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
@@ -67,7 +68,8 @@ public class ReviewController {
     public ResponseEntity<ApiResponse> getAvailableReviews(
             @RequestParam Long orderId,
             @AuthenticationPrincipal Jwt jwt) {
-        Long userId = jwt.getClaim("userId");
+        Object claim = jwt.getClaim("userId");
+        Long userId = claim instanceof Number ? ((Number) claim).longValue() : Long.valueOf(claim.toString());
         List<AvailableReviewResponse> data = reviewService.getAvailableReviews(orderId, userId);
         
         return ResponseEntity.ok(ApiResponse.builder()
