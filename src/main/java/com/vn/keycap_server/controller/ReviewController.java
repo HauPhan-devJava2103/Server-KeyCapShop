@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import com.vn.keycap_server.dto.ApiResponse;
 import com.vn.keycap_server.dto.PaginationMeta;
 import com.vn.keycap_server.dto.response.review.ReviewResponse;
+import com.vn.keycap_server.dto.response.review.AvailableReviewResponse;
 import com.vn.keycap_server.service.review.IReviewService;
+import java.util.List;
 import com.vn.keycap_server.utils.PaginationUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -58,6 +60,20 @@ public class ReviewController {
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Gửi đánh giá sản phẩm thành công!")
+                .build());
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<ApiResponse> getAvailableReviews(
+            @RequestParam Long orderId,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        List<AvailableReviewResponse> data = reviewService.getAvailableReviews(orderId, userId);
+        
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Lấy danh sách đánh giá có sẵn thành công")
+                .data(data)
                 .build());
     }
 }

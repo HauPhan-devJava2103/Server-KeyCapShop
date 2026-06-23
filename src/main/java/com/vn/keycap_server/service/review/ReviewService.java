@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.vn.keycap_server.dto.response.review.ReviewResponse;
+import com.vn.keycap_server.dto.response.review.AvailableReviewResponse;
 import com.vn.keycap_server.mapper.ReviewMapper;
 import com.vn.keycap_server.modal.Review;
 import com.vn.keycap_server.modal.ReviewReply;
@@ -140,5 +141,27 @@ public class ReviewService implements IReviewService {
                     .build();
             reviewReplyRepository.save(reply);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AvailableReviewResponse> getAvailableReviews(Long orderId, Long userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy đơn hàng"));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new BadRequestException("Bạn không có quyền xem đánh giá của đơn hàng này");
+        }
+
+        List<Review> reviews = reviewRepository.findByOrder_Id(orderId);
+
+        return reviews.stream()
+                .map(r -> AvailableReviewResponse.builder()
+                        .productId(r.getProduct().getId())
+                        .rating(r.getRating())
+                        .content(r.getContent())
+                        .createdAt(r.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
