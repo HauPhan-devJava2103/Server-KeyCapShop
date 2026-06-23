@@ -2,8 +2,10 @@ package com.vn.keycap_server.mapper;
 
 import java.util.List;
 
+import com.vn.keycap_server.dto.request.address.CreateAddressRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +23,14 @@ public interface AddressMapper {
     AddressResponse toAddressResponse(Address address);
 
     List<AddressResponse> toAddressResponseList(List<Address> addresses);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    Address toAddress(CreateAddressRequest request);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    void updateAddressFromRequest(CreateAddressRequest request, @MappingTarget Address address);
 
     @Named("toProvince")
     default LocationInfoResponse toProvince(Address address) {

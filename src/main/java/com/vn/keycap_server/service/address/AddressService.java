@@ -2,6 +2,10 @@ package com.vn.keycap_server.service.address;
 
 import java.util.List;
 
+import com.vn.keycap_server.dto.request.address.CreateAddressRequest;
+import com.vn.keycap_server.exception.BadRequestException;
+import com.vn.keycap_server.modal.User;
+import com.vn.keycap_server.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +26,7 @@ public class AddressService implements IAddressService {
     private final AddressRepository addressRepository;
     private final AddressMapper addressMapper;
     private final IDeliveryEstimateService deliveryEstimateService;
+    private final UserRepository userRepository;
 
     @Override
     public List<AddressResponse> getAllAddressByUserId(Long userId) {
@@ -62,5 +67,69 @@ public class AddressService implements IAddressService {
                 .address(addressMapper.toAddressResponse(address))
                 .shippingTime(deliveryEstimateService.estimateDeliveryTime(address).orElse(null))
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public AddressResponse createAddress(CreateAddressRequest request, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("Not found User"));
+
+        // Nếu là địa chỉ đầu tiên -> default address
+        boolean shouldBeDefault = (request.getIsDefault() != null && request.getIsDefault())
+                || addressRepository.countByUserId(userId) == 0;
+        // Nếu đặt mặc định -> reset all address
+        if (shouldBeDefault) {
+            addressRepository.resetDefaultByUserId(userId);
+        }
+
+        Address address = addressMapper.toAddress(request);
+        address.setUser(user);
+        address.setIsDefault(shouldBeDefault);
+
+        Address saved = addressRepository.save(address);
+
+        return addressMapper.toAddressResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public AddressResponse updateAddress(Long addressId, CreateAddressRequest request, Long userId) {
+        Address address = addressRepository.findByIdAndUserId(addressId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa chỉ"));
+
+        boolean shouldBeDefault = request.getIsDefault() != null && request.getIsDefault();
+        if (shouldBeDefault && !address.getIsDefault()) {
+            addressRepository.resetDefaultByUserId(userId);
+        }
+
+        addressMapper.updateAddressFromRequest(request, address);
+        address.setIsDefault(shouldBeDefault);
+        Address saved = addressRepository.save(address);
+
+        return addressMapper.toAddressResponse(saved);
+    }
+
+    @Override
+    public void deleteAddress(Long addressId, Long userId) {
+        Address address = addressRepository.findByIdAndUserId(addressId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa chỉ"));
+
+        long totalAddresses = addressRepository.countByUserId(userId);
+
+        // Không cho xóa địa chỉ mặc định nếu user còn địa chỉ khác
+        if (address.getIsDefault() && totalAddresses > 1) {
+            throw new BadRequestException("Vui lòng đặt một địa chỉ khác làm mặc định trước khi xóa");
+        }
+        addressRepository.delete(address);
+    }
+
+    @Override
+    public void setDefaultAddress(Long addressId, Long userId) {
+        Address address = addressRepository.findByIdAndUserId(addressId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa chỉ"));
+
+        addressRepository.resetDefaultByUserId(userId);
+        address.setIsDefault(true);
+        addressRepository.save(address);
     }
 }
