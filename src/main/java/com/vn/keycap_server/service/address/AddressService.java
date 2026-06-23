@@ -110,6 +110,7 @@ public class AddressService implements IAddressService {
     }
 
     @Override
+    @Transactional
     public void deleteAddress(Long addressId, Long userId) {
         Address address = addressRepository.findByIdAndUserId(addressId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa chỉ"));
@@ -124,6 +125,7 @@ public class AddressService implements IAddressService {
     }
 
     @Override
+    @Transactional
     public void setDefaultAddress(Long addressId, Long userId) {
         Address address = addressRepository.findByIdAndUserId(addressId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa chỉ"));
