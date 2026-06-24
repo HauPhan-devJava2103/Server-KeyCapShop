@@ -94,12 +94,8 @@ public class PayPalService implements IPayPalService {
 
                 if (captureResponse != null && captureResponse.isCompleted()) {
                         order.setPaymentStatus(EPaymentStatus.PAID);
-                        order.setStatus(EOrderStatus.CONFIRMED);
                         eventPublisher.publishEvent(
                                         new OrderCompletedEvent(this, order.getId(), order.getUser().getId()));
-                        // Ghi lịch sử: PENDING -> CONFIRMED
-                        orderHistoryService.recordStatusChange(order, EOrderStatus.PENDING,
-                                        EOrderStatus.CONFIRMED, "Thanh toán PayPal thành công", null);
                 } else {
                         order.setPaymentStatus(EPaymentStatus.FAILED);
                         order.setStatus(EOrderStatus.CANCELLED);

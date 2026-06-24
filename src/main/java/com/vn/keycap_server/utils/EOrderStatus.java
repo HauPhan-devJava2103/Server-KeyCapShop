@@ -2,7 +2,6 @@ package com.vn.keycap_server.utils;
 
 public enum EOrderStatus {
     PENDING, // Chờ xác nhận (vừa tạo đơn)
-    CONFIRMED, // Đã xác nhận (thanh toán thành công hoặc COD)
     PREPARING, // Đang chuẩn bị hàng
     SHIPPING, // Đang giao hàng
     SUCCESS, // Đã giao thành công

@@ -255,7 +255,7 @@ INSERT INTO orders (id, user_id, total_amount, status, shipping_fee, payment_sta
   (2, 5, 2535000, 'SUCCESS', 35000, 'PAID', 'VNPAY', 'VNPAY_12301', 2, CURRENT_DATE - INTERVAL 15 DAY, CURRENT_DATE - INTERVAL 12 DAY),
   (3, 5, 3125000, 'SHIPPING', 35000, 'PAID', 'MOMO', 'MOMO_12302', 1, CURRENT_DATE - INTERVAL 3 DAY, CURRENT_DATE - INTERVAL 1 DAY),
   (4, 5, 1385000, 'PREPARING', 35000, 'PENDING', 'COD', NULL, 3, CURRENT_DATE - INTERVAL 1 DAY, CURRENT_DATE - INTERVAL 1 DAY),
-  (5, 5, 5250000, 'CONFIRMED', 30000, 'PAID', 'VNPAY', 'VNPAY_12303', 1, CURRENT_DATE - INTERVAL 1 DAY, CURRENT_DATE - INTERVAL 1 DAY),
+  (5, 5, 5250000, 'PENDING', 30000, 'PAID', 'VNPAY', 'VNPAY_12303', 1, CURRENT_DATE - INTERVAL 1 DAY, CURRENT_DATE - INTERVAL 1 DAY),
   (6, 5, 990000, 'PENDING', 30000, 'PENDING', 'COD', NULL, 1, CURRENT_DATE, CURRENT_DATE),
   (7, 5, 4500000, 'CANCELLED', 30000, 'FAILED', 'MOMO', 'MOMO_FAIL_01', 2, CURRENT_DATE - INTERVAL 5 DAY, CURRENT_DATE - INTERVAL 5 DAY),
   (8, 5, 420000, 'SUCCESS', 25000, 'PAID', 'COD', NULL, 3, CURRENT_DATE - INTERVAL 60 DAY, CURRENT_DATE - INTERVAL 55 DAY),
@@ -287,27 +287,22 @@ AS new_data ON DUPLICATE KEY UPDATE quantity=new_data.quantity, price=new_data.p
 -- ================== ORDER STATUS HISTORY ==================
 INSERT INTO order_status_history (id, order_id, from_status, to_status, note, created_by, created_at) VALUES
   (1, 1, NULL, 'PENDING', 'Đơn hàng được tạo', 5, CURRENT_DATE - INTERVAL 30 DAY),
-  (2, 1, 'PENDING', 'CONFIRMED', 'Xác nhận đơn COD', 5, CURRENT_DATE - INTERVAL 29 DAY),
-  (3, 1, 'CONFIRMED', 'PREPARING', 'Đang chuẩn bị hàng', NULL, CURRENT_DATE - INTERVAL 28 DAY),
+  (3, 1, 'PENDING', 'PREPARING', 'Đang chuẩn bị hàng', NULL, CURRENT_DATE - INTERVAL 28 DAY),
   (4, 1, 'PREPARING', 'SHIPPING', 'Đã giao cho vận chuyển', NULL, CURRENT_DATE - INTERVAL 27 DAY),
   (5, 1, 'SHIPPING', 'SUCCESS', 'Giao hàng thành công', NULL, CURRENT_DATE - INTERVAL 25 DAY),
   
   (6, 2, NULL, 'PENDING', 'Đơn hàng được tạo', 5, CURRENT_DATE - INTERVAL 15 DAY),
-  (7, 2, 'PENDING', 'CONFIRMED', 'Thanh toán VNPay thành công', 5, CURRENT_DATE - INTERVAL 15 DAY),
-  (8, 2, 'CONFIRMED', 'SHIPPING', 'Giao cho vận chuyển GHN', NULL, CURRENT_DATE - INTERVAL 14 DAY),
+  (8, 2, 'PENDING', 'SHIPPING', 'Giao cho vận chuyển GHN', NULL, CURRENT_DATE - INTERVAL 14 DAY),
   (9, 2, 'SHIPPING', 'SUCCESS', 'Đã nhận hàng', NULL, CURRENT_DATE - INTERVAL 12 DAY),
   
   (10, 3, NULL, 'PENDING', 'Đơn hàng được tạo', 5, CURRENT_DATE - INTERVAL 3 DAY),
-  (11, 3, 'PENDING', 'CONFIRMED', 'Thanh toán MoMo thành công', 5, CURRENT_DATE - INTERVAL 3 DAY),
-  (12, 3, 'CONFIRMED', 'PREPARING', 'Đang chuẩn bị', NULL, CURRENT_DATE - INTERVAL 2 DAY),
+  (12, 3, 'PENDING', 'PREPARING', 'Đang chuẩn bị', NULL, CURRENT_DATE - INTERVAL 2 DAY),
   (13, 3, 'PREPARING', 'SHIPPING', 'Bàn giao Shipper', NULL, CURRENT_DATE - INTERVAL 1 DAY),
   
   (14, 4, NULL, 'PENDING', 'Đơn hàng COD', 5, CURRENT_DATE - INTERVAL 1 DAY),
-  (15, 4, 'PENDING', 'CONFIRMED', 'Đã gọi xác nhận', 5, CURRENT_DATE - INTERVAL 1 DAY),
-  (16, 4, 'CONFIRMED', 'PREPARING', 'Đóng gói sản phẩm', NULL, CURRENT_DATE),
+  (16, 4, 'PENDING', 'PREPARING', 'Đóng gói sản phẩm', NULL, CURRENT_DATE),
   
   (17, 5, NULL, 'PENDING', 'Đơn hàng được tạo', 5, CURRENT_DATE - INTERVAL 1 DAY),
-  (18, 5, 'PENDING', 'CONFIRMED', 'Thanh toán VNPay thành công', 5, CURRENT_DATE - INTERVAL 1 DAY),
   
   (19, 6, NULL, 'PENDING', 'Đơn hàng mới tạo', 5, CURRENT_DATE),
   

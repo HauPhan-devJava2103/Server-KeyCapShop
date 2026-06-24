@@ -121,7 +121,6 @@ public class AdminOrderService implements IAdminOrderService {
     // Generation note
     private String generateStatusNote(EOrderStatus toStatus) {
         return switch (toStatus) {
-            case CONFIRMED -> "Đơn hàng đã được xác nhận bởi admin";
             case PREPARING -> "Đơn hàng đang được chuẩn bị";
             case SHIPPING -> "Đơn hàng đã được giao cho đơn vị vận chuyển";
             case SUCCESS -> "Đơn hàng đã giao thành công";

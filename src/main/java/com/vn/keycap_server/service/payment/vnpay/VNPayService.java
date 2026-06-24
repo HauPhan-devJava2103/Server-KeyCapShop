@@ -166,14 +166,9 @@ public class VNPayService implements IVNPayService {
         String responseCode = vnpParams.get("vnp_ResponseCode");
         if ("00".equals(responseCode)) {
             order.setPaymentStatus(EPaymentStatus.PAID);
-            order.setStatus(EOrderStatus.CONFIRMED);
             order.setTransactionId(vnpParams.get("vnp_TransactionNo"));
             eventPublisher.publishEvent(
                     new OrderCompletedEvent(this, order.getId(), order.getUser().getId()));
-
-            // Ghi lịch sử: PENDING -> CONFIRMED
-            orderHistoryService.recordStatusChange(order, EOrderStatus.PENDING,
-                    EOrderStatus.CONFIRMED, "Thanh toán VNPay thành công", null);
         } else {
             order.setPaymentStatus(EPaymentStatus.FAILED);
             order.setStatus(EOrderStatus.CANCELLED);

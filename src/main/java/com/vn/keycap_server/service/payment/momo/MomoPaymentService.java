@@ -114,13 +114,9 @@ public class MomoPaymentService implements IMomoPaymentService {
                 // Update Status
                 if (ipn.getResultCode() == 0) {
                         order.setPaymentStatus(EPaymentStatus.PAID);
-                        order.setStatus(EOrderStatus.CONFIRMED);
                         order.setTransactionId(String.valueOf(ipn.getTransId()));
                         eventPublisher.publishEvent(
                                         new OrderCompletedEvent(this, order.getId(), order.getUser().getId()));
-                        // Ghi lịch sử: PENDING -> CONFIRMED
-                        orderHistoryService.recordStatusChange(order, EOrderStatus.PENDING,
-                                        EOrderStatus.CONFIRMED, "Thanh toán MoMo thành công", null);
                 } else {
                         order.setPaymentStatus(EPaymentStatus.FAILED);
                         order.setStatus(EOrderStatus.CANCELLED);
