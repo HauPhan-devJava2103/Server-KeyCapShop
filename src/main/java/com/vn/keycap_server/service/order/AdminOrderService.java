@@ -1,5 +1,14 @@
 package com.vn.keycap_server.service.order;
 
+import java.util.Map;
+import java.util.Set;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+
 import com.vn.keycap_server.dto.request.order.CancelOrderRequest;
 import com.vn.keycap_server.dto.request.order.UpdateOrderStatusRequest;
 import com.vn.keycap_server.dto.response.order.OrderAdminResponse;
@@ -14,14 +23,6 @@ import com.vn.keycap_server.utils.EPaymentStatus;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-
-import java.util.Map;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -104,8 +105,7 @@ public class AdminOrderService implements IAdminOrderService {
 
     // Validation Transition
     private static final Map<EOrderStatus, Set<EOrderStatus>> VALID_TRANSITION = Map.of(
-            EOrderStatus.PENDING, Set.of(EOrderStatus.CONFIRMED, EOrderStatus.CANCELLED),
-            EOrderStatus.CONFIRMED, Set.of(EOrderStatus.PREPARING),
+            EOrderStatus.PENDING, Set.of(EOrderStatus.PREPARING, EOrderStatus.CANCELLED),
             EOrderStatus.PREPARING, Set.of(EOrderStatus.SHIPPING),
             EOrderStatus.SHIPPING, Set.of(EOrderStatus.SUCCESS, EOrderStatus.RETURNED));
 
