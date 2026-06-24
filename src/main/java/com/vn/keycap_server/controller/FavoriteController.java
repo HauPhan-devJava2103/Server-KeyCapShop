@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.vn.keycap_server.dto.ApiResponse;
 import com.vn.keycap_server.exception.UnauthorizedException;
 import com.vn.keycap_server.service.favorite.IFavoriteService;
-
 import lombok.RequiredArgsConstructor;
+import com.vn.keycap_server.utils.JwtUtils;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,7 +29,7 @@ public class FavoriteController {
         if (jwt == null) {
             throw new UnauthorizedException("Vui lòng đăng nhập để sử dụng tính năng này");
         }
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
 
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)

@@ -10,6 +10,7 @@ import com.vn.keycap_server.utils.EOrderStatus;
 import com.vn.keycap_server.utils.PaginationUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.vn.keycap_server.utils.JwtUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -60,7 +61,7 @@ public class AdminOrderController {
                         @RequestBody @Valid UpdateOrderStatusRequest request,
                         @AuthenticationPrincipal Jwt jwt) {
 
-                Long userId = jwt.getClaim("userId");
+                Long userId = JwtUtils.getUserId(jwt);
                 return ResponseEntity.ok(ApiResponse.builder()
                                 .success(true)
                                 .message("Cập nhật trạng thái đơn hàng thành công")
@@ -76,7 +77,7 @@ public class AdminOrderController {
                         @PathVariable Long id,
                         @RequestBody @Valid CancelOrderRequest request,
                         @AuthenticationPrincipal Jwt jwt) {
-                Long adminId = jwt.getClaim("userId");
+                Long adminId = JwtUtils.getUserId(jwt);
                 return ResponseEntity.ok(ApiResponse.builder()
                                 .success(true)
                                 .message("Đơn hàng đã được hủy thành công")

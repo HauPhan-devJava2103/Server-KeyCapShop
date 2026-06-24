@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.vn.keycap_server.dto.ApiResponse;
 import com.vn.keycap_server.service.address.IAddressService;
-
 import lombok.RequiredArgsConstructor;
+import com.vn.keycap_server.utils.JwtUtils;
 
 @RestController
 @RequestMapping("/address")
@@ -22,7 +22,7 @@ public class AddressController {
     @GetMapping("")
     public ResponseEntity<ApiResponse> getAllAddress(@AuthenticationPrincipal Jwt jwt) {
 
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Lấy danh sách địa chỉ thành công.")
@@ -41,7 +41,7 @@ public class AddressController {
     public ResponseEntity<ApiResponse> getShippingInfo(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false) Long addressId) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Lấy thông tin giao hàng thành công")
@@ -54,7 +54,7 @@ public class AddressController {
     public ResponseEntity<ApiResponse> createAddress(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid CreateAddressRequest request) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.builder()
                         .success(true)
@@ -69,7 +69,7 @@ public class AddressController {
             @PathVariable Long addressId,
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid CreateAddressRequest request) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Cập nhật địa chỉ thành công")
@@ -82,7 +82,7 @@ public class AddressController {
     public ResponseEntity<ApiResponse> deleteAddress(
             @PathVariable Long addressId,
             @AuthenticationPrincipal Jwt jwt) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
         addressService.deleteAddress(addressId, userId);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
@@ -95,7 +95,7 @@ public class AddressController {
     public ResponseEntity<ApiResponse> setDefaultAddress(
             @PathVariable Long addressId,
             @AuthenticationPrincipal Jwt jwt) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
         addressService.setDefaultAddress(addressId, userId);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
