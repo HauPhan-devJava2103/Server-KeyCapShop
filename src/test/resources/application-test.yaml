@@ -1,0 +1,66 @@
+spring:
+  datasource:
+    url: "jdbc:mysql://localhost:3306/keycap_server_test?createDatabaseIfNotExist=true"
+    driverClassName: "com.mysql.cj.jdbc.Driver"
+    username: root
+    password: ${DB_PASSWORD:root}
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  mail:
+    host: localhost
+    port: 1025
+    username: test
+    password: test
+
+jwt:
+  signerKey: "testKeyTestKeyTestKeyTestKeyTestKeyTestKeyTestKeyTestKeyTestKey1234567890"
+
+momo:
+  partner-code: "TEST_PARTNER"
+  access-key: "TEST_ACCESS"
+  secret-key: "TEST_SECRET"
+  api-url: "http://localhost:8080/momo"
+  redirect-url: "http://localhost:8080/momo/redirect"
+  ipn-url: "http://localhost:8080/momo/ipn"
+
+vnpay:
+  tmn-code: "TEST_VNPAY"
+  hash-secret: "TEST_SECRET_HASH_VNPAY_1234567890"
+  api-url: "http://localhost:8080/vnpay"
+  redirect-url: "http://localhost:8080/vnpay/redirect"
+
+paypal:
+  client-id: "TEST_PAYPAL_ID"
+  client-secret: "TEST_PAYPAL_SECRET"
+  api-url: "http://localhost:8080/paypal"
+  redirect-url: "http://localhost:8080/paypal/redirect"
+
+shipping:
+  ghn:
+    token: "TEST_GHN_TOKEN"
+    shop-id: "TEST_GHN_SHOP"
+    api-url: "http://localhost:8080/ghn"
+    from-district-id: "1"
+    from-ward-code: "1"
+
+order:
+  payment:
+    expiry-minutes: 15
+
+cloudinary:
+  cloud-name: "testcloud"
+  api-key: "testkey"
+  api-secret: "testsecret"
+  signature-expires-in: 3600
