@@ -12,8 +12,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import com.vn.keycap_server.dto.ApiResponse;
 
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler({ MethodArgumentNotValidException.class,
             ConstraintViolationException.class })
@@ -92,6 +94,7 @@ public class GlobalExceptionHandler {
     // Lỗi 500: Bắt tất cả lỗi chưa được xử lý
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse> handleGenericException(Exception e) {
+        log.error("Internal Server Error: ", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.builder()
                         .success(false)

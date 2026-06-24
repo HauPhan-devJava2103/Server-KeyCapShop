@@ -696,9 +696,29 @@ public class AdminProductService implements IAdminProductService {
         // 1. Khởi tạo collection lazy để Hibernate quản lý orphanRemoval trên collection gốc
         product.getImages().size();
 
-        // 2. Xóa collection cũ và thêm collection mới theo payload
-        product.getImages().clear();
-        product.getImages().addAll(buildProductImages(product, imageUrl, thumbnailUrls));
+        // 2. Lấy danh sách ảnh mới từ payload
+        List<ProductImage> newImages = buildProductImages(product, imageUrl, thumbnailUrls);
+
+        // 3. Map ảnh hiện tại theo URL để cập nhật
+        Map<String, ProductImage> currentImageByUrl = product.getImages().stream()
+                .collect(Collectors.toMap(ProductImage::getUrl, img -> img, (first, second) -> first));
+
+        // 4. Lọc URL mới để xóa ảnh cũ không còn tồn tại trong request
+        Set<String> requestUrls = newImages.stream()
+                .map(ProductImage::getUrl)
+                .collect(Collectors.toSet());
+        product.getImages().removeIf(img -> !requestUrls.contains(img.getUrl()));
+
+        // 5. Cập nhật thứ tự/trạng thái cho ảnh cũ, hoặc thêm ảnh mới
+        for (ProductImage newImg : newImages) {
+            ProductImage currentImg = currentImageByUrl.get(newImg.getUrl());
+            if (currentImg != null) {
+                currentImg.setPrimary(newImg.getPrimary());
+                currentImg.setSortOrder(newImg.getSortOrder());
+            } else {
+                product.getImages().add(newImg);
+            }
+        }
     }
 
     /**
@@ -710,9 +730,36 @@ public class AdminProductService implements IAdminProductService {
         // 1. Khởi tạo collection lazy để Hibernate quản lý orphanRemoval trên collection gốc
         product.getSpecifications().size();
 
-        // 2. Xóa collection cũ và thêm collection mới theo payload
-        product.getSpecifications().clear();
-        product.getSpecifications().addAll(buildProductSpecifications(product, specifications));
+        // 2. Map thông số hiện tại theo tên để cập nhật
+        Map<String, ProductSpecification> currentSpecByName = product.getSpecifications().stream()
+                .collect(Collectors.toMap(ProductSpecification::getName, spec -> spec, (first, second) -> first));
+
+        // 3. Xóa các thông số cũ không còn trong payload
+        List<AdminProductSpecificationRequest> safeSpecifications = specifications == null ? Collections.emptyList() : specifications;
+        Set<String> requestNames = safeSpecifications.stream()
+                .map(req -> req.getName().trim())
+                .collect(Collectors.toSet());
+        product.getSpecifications().removeIf(spec -> !requestNames.contains(spec.getName()));
+
+        // 4. Cập nhật thông số cũ hoặc thêm mới
+        for (int index = 0; index < safeSpecifications.size(); index++) {
+            AdminProductSpecificationRequest req = safeSpecifications.get(index);
+            String name = req.getName().trim();
+            String value = req.getValue().trim();
+
+            ProductSpecification currentSpec = currentSpecByName.get(name);
+            if (currentSpec != null) {
+                currentSpec.setValue(value);
+                currentSpec.setSortOrder(index);
+            } else {
+                product.getSpecifications().add(ProductSpecification.builder()
+                        .product(product)
+                        .name(name)
+                        .value(value)
+                        .sortOrder(index)
+                        .build());
+            }
+        }
     }
 
     /**
@@ -779,15 +826,41 @@ public class AdminProductService implements IAdminProductService {
      * Sync attributes của một variant.
      */
     private void syncVariantAttributes(ProductVariant variant, Map<String, String> attributes) {
-        // 1. Với variant cũ, clear collection hiện tại để orphanRemoval xóa attribute cũ
+        // 1. Khởi tạo collection lazy
         if (variant.getAttributes() == null) {
             variant.setAttributes(new ArrayList<>());
-        } else {
-            variant.getAttributes().clear();
+            variant.getAttributes().addAll(buildVariantAttributes(variant, attributes));
+            return;
         }
+        variant.getAttributes().size();
 
-        // 2. Thêm lại attributes theo payload mới
-        variant.getAttributes().addAll(buildVariantAttributes(variant, attributes));
+        // 2. Map thuộc tính hiện tại theo tên để cập nhật
+        Map<String, ProductVariantAttribute> currentAttrByName = variant.getAttributes().stream()
+                .collect(Collectors.toMap(ProductVariantAttribute::getName, attr -> attr, (first, second) -> first));
+
+        // 3. Xóa các thuộc tính cũ không còn trong payload
+        Map<String, String> safeAttributes = attributes == null ? Collections.emptyMap() : attributes;
+        Set<String> requestNames = safeAttributes.keySet().stream()
+                .map(String::trim)
+                .collect(Collectors.toSet());
+        variant.getAttributes().removeIf(attr -> !requestNames.contains(attr.getName()));
+
+        // 4. Cập nhật thuộc tính cũ hoặc thêm mới
+        for (Map.Entry<String, String> entry : safeAttributes.entrySet()) {
+            String name = entry.getKey().trim();
+            String value = entry.getValue().trim();
+
+            ProductVariantAttribute currentAttr = currentAttrByName.get(name);
+            if (currentAttr != null) {
+                currentAttr.setValue(value);
+            } else {
+                variant.getAttributes().add(ProductVariantAttribute.builder()
+                        .variant(variant)
+                        .name(name)
+                        .value(value)
+                        .build());
+            }
+        }
     }
 
     /**
