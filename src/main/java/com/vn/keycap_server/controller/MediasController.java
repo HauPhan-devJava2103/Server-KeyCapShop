@@ -20,6 +20,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import com.vn.keycap_server.utils.JwtUtils;
 
 @Validated
 @RestController
@@ -37,7 +38,7 @@ public class MediasController {
             @NotEmpty(message = "Danh sách media không được để trống")
             @Size(max = 10, message = "Mỗi lần chỉ được lưu tối đa 10 media")
             List<@Valid SaveMediaRequest> requests) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.builder()

@@ -15,6 +15,7 @@ import com.vn.keycap_server.dto.response.review.AvailableReviewResponse;
 import com.vn.keycap_server.service.review.IReviewService;
 import java.util.List;
 import com.vn.keycap_server.utils.PaginationUtils;
+import com.vn.keycap_server.utils.JwtUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -55,8 +56,7 @@ public class ReviewController {
     public ResponseEntity<ApiResponse> createReviews(
             @RequestBody @Valid CreateReviewRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        Object claim = jwt.getClaim("userId");
-        Long userId = claim instanceof Number ? ((Number) claim).longValue() : Long.valueOf(claim.toString());
+        Long userId = JwtUtils.getUserId(jwt);
         reviewService.createReviews(request, userId);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
@@ -68,8 +68,7 @@ public class ReviewController {
     public ResponseEntity<ApiResponse> getAvailableReviews(
             @RequestParam Long orderId,
             @AuthenticationPrincipal Jwt jwt) {
-        Object claim = jwt.getClaim("userId");
-        Long userId = claim instanceof Number ? ((Number) claim).longValue() : Long.valueOf(claim.toString());
+        Long userId = JwtUtils.getUserId(jwt);
         List<AvailableReviewResponse> data = reviewService.getAvailableReviews(orderId, userId);
         
         return ResponseEntity.ok(ApiResponse.builder()

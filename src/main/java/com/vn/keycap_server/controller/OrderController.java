@@ -19,6 +19,7 @@ import com.vn.keycap_server.service.order.IOrderService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.vn.keycap_server.utils.JwtUtils;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,7 +32,7 @@ public class OrderController {
         public ResponseEntity<ApiResponse> prepareOrder(
                         @RequestBody @Valid PrepareCheckoutRequestWrapper request,
                         @AuthenticationPrincipal Jwt jwt) {
-                Long userId = jwt.getClaim("userId");
+                Long userId = JwtUtils.getUserId(jwt);
 
                 return ResponseEntity.ok(ApiResponse.builder()
                                 .success(true)
@@ -44,7 +45,7 @@ public class OrderController {
         public ResponseEntity<ApiResponse> checkoutOrder(
                         @RequestBody @Valid CheckoutRequest request,
                         @AuthenticationPrincipal Jwt jwt) {
-                Long userId = jwt.getClaim("userId");
+                Long userId = JwtUtils.getUserId(jwt);
                 return ResponseEntity.ok(ApiResponse.builder()
                                 .success(true)
                                 .message("Tạo đơn hàng thanh toán thành công!")
@@ -66,7 +67,7 @@ public class OrderController {
         public ResponseEntity<ApiResponse> getUserOrders(
                         @AuthenticationPrincipal Jwt jwt,
                         @RequestParam(required = false) String status) {
-                Long userId = jwt.getClaim("userId");
+                Long userId = JwtUtils.getUserId(jwt);
                 return ResponseEntity.ok(ApiResponse.builder()
                                 .success(true)
                                 .message("Lấy danh sách trạng thái đơn hàng thành công!")
@@ -77,7 +78,7 @@ public class OrderController {
         @GetMapping("/{orderId}")
         public ResponseEntity<ApiResponse> getOrderDetail(@PathVariable Long orderId,
                         @AuthenticationPrincipal Jwt jwt) {
-                Long userId = jwt.getClaim("userId");
+                Long userId = JwtUtils.getUserId(jwt);
                 return ResponseEntity.ok(ApiResponse.builder()
                                 .success(true)
                                 .message("Lấy thông tin đơn hàng thành công!")
@@ -89,7 +90,7 @@ public class OrderController {
         public ResponseEntity<ApiResponse> cancelOrder(@PathVariable Long orderId,
                         @RequestBody CancelOrderRequest request,
                         @AuthenticationPrincipal Jwt jwt) {
-                Long userId = jwt.getClaim("userId");
+                Long userId = JwtUtils.getUserId(jwt);
                 orderService.cancelOrder(orderId, userId, request);
                 return ResponseEntity.ok(ApiResponse.builder()
                                 .success(true)

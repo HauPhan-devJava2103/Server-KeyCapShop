@@ -15,6 +15,7 @@ import com.vn.keycap_server.service.user.IUserService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.vn.keycap_server.utils.JwtUtils;
 
 @RestController
 @RequestMapping("/user")
@@ -25,7 +26,7 @@ public class UserController {
 
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse> getProfile(@AuthenticationPrincipal Jwt jwt) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
 
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
@@ -41,7 +42,7 @@ public class UserController {
     public ResponseEntity<ApiResponse> updateProfile(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody UpdateProfileRequest request) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
 
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)

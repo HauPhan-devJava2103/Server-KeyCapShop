@@ -13,6 +13,7 @@ import com.vn.keycap_server.service.review.IReviewService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.vn.keycap_server.utils.JwtUtils;
 
 @Validated
 @RestController
@@ -28,7 +29,7 @@ public class AdminReviewController {
             @PathVariable Long reviewId,
             @RequestBody @Valid CreateReplyRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
         reviewService.replyToReview(reviewId, request, userId);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)

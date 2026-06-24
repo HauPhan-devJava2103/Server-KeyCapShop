@@ -20,6 +20,7 @@ import com.vn.keycap_server.service.cart.ICartService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.vn.keycap_server.utils.JwtUtils;
 
 /**
  * CartController cung cấp các API endpoints tương tác với giỏ hàng.
@@ -50,7 +51,7 @@ public class CartController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse> getCart(@AuthenticationPrincipal Jwt jwt) {
-        Long userId = jwt.getClaim("userId");
+        Long userId = JwtUtils.getUserId(jwt);
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Lấy giỏ hàng thành công")

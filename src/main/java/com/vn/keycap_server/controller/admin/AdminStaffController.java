@@ -27,6 +27,7 @@ import com.vn.keycap_server.utils.PaginationUtils;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.vn.keycap_server.utils.JwtUtils;
 
 /**
  * Controller quản lý nhân viên trong khu vực admin.
@@ -137,7 +138,7 @@ public class AdminStaffController {
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt) {
         // 1. Lấy userId từ JWT để service chặn tự xóa tài khoản đang đăng nhập.
-        Long actorUserId = jwt.getClaim("userId");
+        Long actorUserId = JwtUtils.getUserId(jwt);
 
         // 2. Gọi service xóa nhân viên.
         adminStaffService.deleteStaff(id, actorUserId);
