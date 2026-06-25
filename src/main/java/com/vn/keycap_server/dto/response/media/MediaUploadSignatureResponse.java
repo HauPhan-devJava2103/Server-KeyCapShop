@@ -8,8 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Provider-neutral response returned to the frontend before direct media upload.
- * JsonProperty locks the FE-BE contract even if Java naming changes later.
+ * Response trung lập trả về cho frontend trước khi upload media trực tiếp.
+ * JsonProperty giúp khóa tên field JSON để không làm lệch contract FE-BE.
  */
 @Data
 @Builder

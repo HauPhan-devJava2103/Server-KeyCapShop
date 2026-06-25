@@ -3,14 +3,15 @@ package com.vn.keycap_server.service.media.adapter;
 import com.vn.keycap_server.dto.response.media.MediaUploadSignatureResponse;
 
 /**
- * Target interface for media storage providers.
- * Services depend on this contract instead of a concrete vendor SDK.
+ * Interface đích cho các nhà cung cấp lưu trữ media.
+ * Service nghiệp vụ phụ thuộc vào contract này thay vì phụ thuộc trực tiếp SDK
+ * vendor.
  */
 public interface MediaStorageAdapter {
 
     /**
-     * Creates a short-lived upload signature while preserving the public API shape
-     * expected by the frontend.
+     * Tạo chữ ký upload ngắn hạn và giữ nguyên cấu trúc response mà frontend đang
+     * dùng.
      */
     MediaUploadSignatureResponse createUploadSignature();
 }

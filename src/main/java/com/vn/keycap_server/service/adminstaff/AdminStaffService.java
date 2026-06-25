@@ -122,7 +122,7 @@ public class AdminStaffService implements IAdminStaffService {
                 .role(ERole.STAFF)
                 .build();
 
-        // 4. Save staff first, then publish an event for the email observer after commit.
+        // 4. Lưu nhân viên trước, sau đó phát sự kiện để observer gửi email sau commit.
         User savedStaff = userRepository.save(staff);
         eventPublisher.publishEvent(new StaffCreatedEvent(
                 this,

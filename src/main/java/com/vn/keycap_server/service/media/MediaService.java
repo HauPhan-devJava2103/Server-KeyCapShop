@@ -25,8 +25,8 @@ import com.vn.keycap_server.utils.EMediaStatus;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Handles application media records while delegating storage-provider details
- * to MediaStorageAdapter.
+ * Service xử lý bản ghi media trong hệ thống.
+ * Chi tiết của nhà cung cấp lưu trữ được ủy quyền cho MediaStorageAdapter.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,9 +40,9 @@ public class MediaService implements IMediaService {
     private final MediaMapper mediaMapper;
 
     /**
-     * Returns upload signature data through the adapter. The response JSON shape
-     * is preserved for the frontend: signature, timestamp, apiKey, cloudName,
-     * expiresIn.
+     * Lấy thông tin chữ ký upload thông qua adapter.
+     * Cấu trúc JSON trả về cho FE vẫn giữ nguyên: signature, timestamp, apiKey,
+     * cloudName, expiresIn.
      */
     @Override
     public MediaUploadSignatureResponse getUploadSignature() {
@@ -50,9 +50,9 @@ public class MediaService implements IMediaService {
     }
 
     /**
-     * Persists media metadata after the frontend has uploaded files to the
-     * storage provider. Newly saved records stay PENDING until a domain object
-     * such as Product or User consumes them.
+     * Lưu metadata media sau khi frontend upload file lên nhà cung cấp lưu trữ.
+     * Media mới lưu ở trạng thái PENDING cho đến khi Product hoặc User thật sự sử
+     * dụng.
      */
     @Override
     @Transactional

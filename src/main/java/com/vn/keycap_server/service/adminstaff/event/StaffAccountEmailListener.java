@@ -11,8 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Observer that sends account credentials only after the staff creation
- * transaction is committed successfully.
+ * Observer gửi thông tin tài khoản sau khi transaction tạo nhân viên commit
+ * thành công.
  */
 @Slf4j
 @Component
@@ -22,8 +22,8 @@ public class StaffAccountEmailListener {
     private final IMailService mailService;
 
     /**
-     * Runs after commit so email failures do not roll back the saved staff
-     * account. The method is async to keep the admin request responsive.
+     * Chạy sau commit để lỗi gửi email không rollback tài khoản nhân viên đã lưu.
+     * Method chạy bất đồng bộ để request tạo nhân viên phản hồi nhanh hơn.
      */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -34,7 +34,7 @@ public class StaffAccountEmailListener {
                     event.getFullName(),
                     event.getTemporaryPassword());
         } catch (Exception exception) {
-            log.error("Failed to send staff account email for staffId={}", event.getStaffId(), exception);
+            log.error("Gửi email tài khoản nhân viên thất bại, staffId={}", event.getStaffId(), exception);
         }
     }
 }

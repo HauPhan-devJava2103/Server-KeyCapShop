@@ -5,8 +5,9 @@ import org.springframework.context.ApplicationEvent;
 import lombok.Getter;
 
 /**
- * Event published after a staff account is created.
- * Observers can react without coupling their side effects to AdminStaffService.
+ * Sự kiện được phát ra sau khi tài khoản nhân viên được tạo.
+ * Các observer có thể xử lý tác vụ phụ mà không làm AdminStaffService phụ thuộc
+ * trực tiếp vào chúng.
  */
 @Getter
 public class StaffCreatedEvent extends ApplicationEvent {

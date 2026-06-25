@@ -14,8 +14,8 @@ import com.vn.keycap_server.dto.response.media.MediaUploadSignatureResponse;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Adapter that translates the application's media signature contract to
- * Cloudinary-specific signing rules.
+ * Adapter chuyển contract tạo chữ ký upload của hệ thống sang quy tắc ký riêng
+ * của Cloudinary.
  */
 @Component
 @RequiredArgsConstructor
@@ -27,9 +27,8 @@ public class CloudinaryMediaStorageAdapter implements MediaStorageAdapter {
     private final CloudinaryProperties cloudinaryProperties;
 
     /**
-     * Signs only the upload parameters sent by the frontend. Adding parameters
-     * here that FE does not submit, such as folder, would make Cloudinary reject
-     * the upload signature.
+     * Chỉ ký các tham số FE thật sự gửi lên Cloudinary.
+     * Nếu ký thêm tham số FE không gửi, ví dụ folder, Cloudinary sẽ từ chối chữ ký.
      */
     @Override
     public MediaUploadSignatureResponse createUploadSignature() {
@@ -55,7 +54,7 @@ public class CloudinaryMediaStorageAdapter implements MediaStorageAdapter {
         if (!StringUtils.hasText(cloudinaryProperties.getCloudName())
                 || !StringUtils.hasText(cloudinaryProperties.getApiKey())
                 || !StringUtils.hasText(cloudinaryProperties.getApiSecret())) {
-            throw new IllegalStateException("Cloudinary is not fully configured");
+            throw new IllegalStateException("Cloudinary chưa được cấu hình đầy đủ");
         }
     }
 }
