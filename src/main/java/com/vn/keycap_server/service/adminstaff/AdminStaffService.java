@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,9 +22,8 @@ import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.exception.ResourceNotFoundException;
 import com.vn.keycap_server.mapper.AdminStaffMapper;
 import com.vn.keycap_server.modal.User;
-import com.vn.keycap_server.repository.OrderRepository;
 import com.vn.keycap_server.repository.UserRepository;
-import com.vn.keycap_server.service.mail.IMailService;
+import com.vn.keycap_server.service.adminstaff.event.StaffCreatedEvent;
 import com.vn.keycap_server.utils.ERole;
 
 import lombok.RequiredArgsConstructor;
@@ -40,10 +40,9 @@ public class AdminStaffService implements IAdminStaffService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
-    private final OrderRepository orderRepository;
     private final AdminStaffMapper adminStaffMapper;
     private final PasswordEncoder passwordEncoder;
-    private final IMailService mailService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Lấy danh sách nhân viên có phân trang và tìm kiếm theo tên, email hoặc số
@@ -123,9 +122,14 @@ public class AdminStaffService implements IAdminStaffService {
                 .role(ERole.STAFF)
                 .build();
 
-        // 4. Lưu nhân viên trước, sau đó gửi email để nhân viên có thông tin đăng nhập.
+        // 4. Lưu nhân viên trước, sau đó phát sự kiện để observer gửi email sau commit.
         User savedStaff = userRepository.save(staff);
-        mailService.sendStaffAccountEmail(savedStaff.getEmail(), savedStaff.getFullName(), temporaryPassword);
+        eventPublisher.publishEvent(new StaffCreatedEvent(
+                this,
+                savedStaff.getId(),
+                savedStaff.getEmail(),
+                savedStaff.getFullName(),
+                temporaryPassword));
 
         // 5. Trả response đúng field FE đang dùng.
         return adminStaffMapper.toAdminStaffResponse(savedStaff);

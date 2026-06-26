@@ -1,21 +1,15 @@
 package com.vn.keycap_server.service.media;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
-import com.cloudinary.Cloudinary;
-import com.vn.keycap_server.configuration.cloudinary.CloudinaryProperties;
 import com.vn.keycap_server.dto.request.media.SaveMediaRequest;
-import com.vn.keycap_server.dto.response.media.CloudinarySignatureResponse;
+import com.vn.keycap_server.dto.response.media.MediaUploadSignatureResponse;
 import com.vn.keycap_server.dto.response.media.SavedMediaResponse;
 import com.vn.keycap_server.exception.BadRequestException;
 import com.vn.keycap_server.exception.ResourceNotFoundException;
@@ -24,45 +18,42 @@ import com.vn.keycap_server.modal.Media;
 import com.vn.keycap_server.modal.User;
 import com.vn.keycap_server.repository.MediaRepository;
 import com.vn.keycap_server.repository.UserRepository;
+import com.vn.keycap_server.service.media.adapter.MediaStorageAdapter;
 import com.vn.keycap_server.utils.EMediaResourceType;
 import com.vn.keycap_server.utils.EMediaStatus;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý bản ghi media trong hệ thống.
+ * Chi tiết của nhà cung cấp lưu trữ được ủy quyền cho MediaStorageAdapter.
+ */
 @Service
 @RequiredArgsConstructor
 public class MediaService implements IMediaService {
 
-    private static final String TEMPORARY_TAG = "tmp";
     private static final long PENDING_MEDIA_TTL_HOURS = 12;
 
-    private final Cloudinary cloudinary;
-    private final CloudinaryProperties cloudinaryProperties;
+    private final MediaStorageAdapter mediaStorageAdapter;
     private final MediaRepository mediaRepository;
     private final UserRepository userRepository;
     private final MediaMapper mediaMapper;
 
+    /**
+     * Lấy thông tin chữ ký upload thông qua adapter.
+     * Cấu trúc JSON trả về cho FE vẫn giữ nguyên: signature, timestamp, apiKey,
+     * cloudName, expiresIn.
+     */
     @Override
-    public CloudinarySignatureResponse getUploadSignature() {
-        validateCloudinaryConfiguration();
-        long timestamp = Instant.now().getEpochSecond();
-
-        // Chỉ ký các tham số mà FE gửi khi upload trực tiếp lên Cloudinary.
-        Map<String, Object> parametersToSign = new HashMap<>();
-        parametersToSign.put("timestamp", timestamp);
-        parametersToSign.put("tags", TEMPORARY_TAG);
-
-        String signature = cloudinary.apiSignRequest(parametersToSign, cloudinaryProperties.getApiSecret());
-
-        return CloudinarySignatureResponse.builder()
-                .signature(signature)
-                .timestamp(timestamp)
-                .apiKey(cloudinaryProperties.getApiKey())
-                .cloudName(cloudinaryProperties.getCloudName())
-                .expiresIn(cloudinaryProperties.getSignatureExpiresIn())
-                .build();
+    public MediaUploadSignatureResponse getUploadSignature() {
+        return mediaStorageAdapter.createUploadSignature();
     }
 
+    /**
+     * Lưu metadata media sau khi frontend upload file lên nhà cung cấp lưu trữ.
+     * Media mới lưu ở trạng thái PENDING cho đến khi Product hoặc User thật sự sử
+     * dụng.
+     */
     @Override
     @Transactional
     public List<SavedMediaResponse> saveMedias(List<SaveMediaRequest> requests, Long userId) {
@@ -94,13 +85,5 @@ public class MediaService implements IMediaService {
         media.setPendingExpiresAt(LocalDateTime.now().plusHours(PENDING_MEDIA_TTL_HOURS));
         media.setUploadedBy(user);
         return media;
-    }
-
-    private void validateCloudinaryConfiguration() {
-        if (!StringUtils.hasText(cloudinaryProperties.getCloudName())
-                || !StringUtils.hasText(cloudinaryProperties.getApiKey())
-                || !StringUtils.hasText(cloudinaryProperties.getApiSecret())) {
-            throw new IllegalStateException("Cloudinary chưa được cấu hình đầy đủ");
-        }
     }
 }
