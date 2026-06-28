@@ -1,256 +1,185 @@
-# ⌨️ KeyCap E-Commerce Backend
+<p align="center">
+  <img src="https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=openjdk" />
+  <img src="https://img.shields.io/badge/Spring_Boot-3.5-brightgreen?style=for-the-badge&logo=springboot" />
+  <img src="https://img.shields.io/badge/MySQL-8.0-blue?style=for-the-badge&logo=mysql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Redis-Cache-red?style=for-the-badge&logo=redis&logoColor=white" />
+  <img src="https://img.shields.io/badge/JWT-Security-black?style=for-the-badge&logo=jsonwebtokens" />
+  <img src="https://img.shields.io/badge/RabbitMQ-Queue-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white" />
+  <img src="https://img.shields.io/badge/Maven-Build-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white" />
+  <img src="https://img.shields.io/badge/Cloudinary-Upload-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white" />
 
-> Hệ thống Backend REST API cho website thương mại điện tử chuyên bán keycap và bàn phím cơ. Hỗ trợ người dùng mua hàng trực tuyến và quản trị viên quản lý toàn bộ hệ thống.
+</p>
 
----
+<h1 align="center">KeyCap E-Commerce Backend ⌨️</h1>
 
-## 📋 Giới Thiệu Dự Án
-
-**KeyCap Server** là backend của hệ thống thương mại điện tử, được xây dựng trên nền tảng **Spring Boot 3.5** với kiến trúc RESTful API. Dự án phục vụ cho 3 nhóm người dùng chính:
-
-- **Khách hàng (USER)**: Duyệt sản phẩm, mua hàng, thanh toán, đánh giá.
-- **Nhân viên (STAFF)**: Hỗ trợ quản lý đơn hàng, sản phẩm, đánh giá.
-- **Quản trị viên (ADMIN)**: Quản lý toàn bộ hệ thống, thống kê doanh thu.
-
-### Các nghiệp vụ chính
-
-- Xác thực & phân quyền (JWT, Google OAuth2)
-- Quản lý sản phẩm, biến thể, danh mục, thương hiệu
-- Giỏ hàng & quy trình đặt hàng
-- Tích hợp đa cổng thanh toán (COD, MoMo, VNPay, PayPal)
-- Tính phí vận chuyển qua GHN API
-- Quản lý đánh giá & phản hồi
-- Dashboard thống kê doanh thu
-- Quản lý media qua Cloudinary
-- Gửi OTP qua email (Gmail SMTP)
-- Hàng đợi xử lý bất đồng bộ (RabbitMQ)
+<p align="center">
+  Dự án cung cấp hệ thống REST API cho website thương mại điện tử bán Keycap / Bàn phím cơ, hỗ trợ người dùng mua hàng và quản trị viên quản lý hệ thống.
+</p>
 
 ---
 
-## 🛠️ Công Nghệ Sử Dụng
+## 📋 Nội dung
 
-### Backend Framework
-
-| Công nghệ               | Phiên bản | Mô tả                           |
-| ----------------------- | --------- | ------------------------------- |
-| Java                    | 21        | Ngôn ngữ lập trình chính        |
-| Spring Boot             | 3.5.14    | Framework backend               |
-| Spring Web              | -         | Xây dựng REST API               |
-| Spring Security         | -         | Xác thực & phân quyền           |
-| Spring Data JPA         | -         | Tầng truy cập dữ liệu           |
-| Spring Data Redis       | -         | Cache & OTP storage             |
-| Spring AMQP             | -         | Message queue (RabbitMQ)        |
-| Spring Cloud OpenFeign  | 2025.0.0  | HTTP Client cho MoMo/PayPal API |
-| Spring Mail + Thymeleaf | -         | Gửi email OTP                   |
-| Hibernate               | -         | ORM mapping                     |
-
-### Database & Cache
-
-| Công nghệ | Mô tả                                 |
-| --------- | ------------------------------------- |
-| MySQL     | Cơ sở dữ liệu chính                   |
-| Redis     | Cache dữ liệu, lưu OTP, rate limiting |
-| RabbitMQ  | Message queue xử lý hết hạn đơn hàng  |
-
-### Authentication & Security
-
-| Công nghệ              | Mô tả                                    |
-| ---------------------- | ---------------------------------------- |
-| JWT (Nimbus JOSE)      | Token-based authentication (HMAC-SHA512) |
-| OAuth2 Resource Server | Decode & validate JWT                    |
-| Google API Client      | Đăng nhập qua Google OAuth2              |
-| BCrypt                 | Mã hóa mật khẩu                          |
-
-### Thanh Toán & Vận Chuyển
-
-| Công nghệ      | Mô tả                  |
-| -------------- | ---------------------- |
-| MoMo Gateway   | Thanh toán qua ví MoMo |
-| VNPay Sandbox  | Thanh toán qua VNPay   |
-| PayPal Sandbox | Thanh toán qua PayPal  |
-| GHN API        | Tính phí vận chuyển    |
-
-### Tools & Libraries
-
-| Công nghệ       | Mô tả                          |
-| --------------- | ------------------------------ |
-| Lombok          | Giảm boilerplate code          |
-| MapStruct 1.6.3 | Object mapping (Entity ↔ DTO)  |
-| Cloudinary      | Upload & quản lý hình ảnh      |
-| Bean Validation | Validate request DTO           |
-| Spring Dotenv   | Quản lý biến môi trường (.env) |
-| Maven           | Build & dependency management  |
+1. [Giới thiệu](#-giới-thiệu)
+2. [Chức năng](#-chức-năng)
+3. [Công nghệ sử dụng](#️-công-nghệ-sử-dụng)
+4. [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
+5. [Yêu cầu môi trường](#️-yêu-cầu-môi-trường)
+6. [Cài đặt](#-cài-đặt)
+7. [Cấu hình môi trường](#-cấu-hình-môi-trường)
+8. [Chạy dự án](#️-chạy-dự-án)
+9. [Liên kết với Frontend](#-liên-kết-với-frontend)
+10. [Thành viên](#-thành-viên)
 
 ---
 
-## 🏗️ Kiến Trúc Dự Án
+## 🚀 Giới thiệu
 
-Dự án được tổ chức theo kiến trúc **Layered Architecture**:
+**KeyCap Server** là backend REST API cho hệ thống thương mại điện tử chuyên bán keycap và bàn phím cơ, được xây dựng trên nền tảng **Spring Boot 3.5** với **Java 21**.
 
-```
-Client Request → Controller → Service → Repository → Database
-                                ↕
-                          DTO ↔ Mapper ↔ Entity
-```
-
-### Các tầng chính
-
-| Tầng              | Vai trò                                                 |
-| ----------------- | ------------------------------------------------------- |
-| **Controller**    | Nhận request HTTP, validate input, trả response         |
-| **Service**       | Xử lý business logic                                    |
-| **Repository**    | Truy vấn database qua Spring Data JPA                   |
-| **Entity/Modal**  | Ánh xạ bảng database (JPA Entity)                       |
-| **DTO**           | Data Transfer Object — request/response riêng biệt      |
-| **Mapper**        | Chuyển đổi Entity ↔ DTO (MapStruct)                     |
-| **Configuration** | Cấu hình Security, Redis, RabbitMQ, Payment, Cloudinary |
-| **Exception**     | Xử lý lỗi tập trung (GlobalExceptionHandler)            |
-
-### Design Patterns áp dụng
-
-| Pattern            | Áp dụng tại                          | Mô tả                                                          |
-| ------------------ | ------------------------------------ | -------------------------------------------------------------- |
-| **Factory Method** | Login (`AbstractLoginCreator`)       | Khởi tạo handler đăng nhập (Basic/Google) qua abstract creator |
-| **Strategy**       | Payment (`IPaymentStrategy`)         | Chọn chiến lược thanh toán runtime (COD/MoMo/VNPay/PayPal)     |
-| **Builder**        | Entity & DTO (`@Builder` Lombok)     | Khởi tạo object phức tạp (Order, LoginResponse...)             |
-| **Repository**     | Spring Data JPA                      | Truy cập dữ liệu qua interface                                 |
-| **DTO**            | Request/Response DTO                 | Tách biệt dữ liệu giữa client và domain                        |
-| **Observer**       | Spring Event (`OrderCompletedEvent`) | Xử lý sự kiện hoàn thành đơn hàng                              |
+- Backend phục vụ cho giao diện **Client** (người dùng mua hàng) và trang **Admin** (quản trị hệ thống).
+- Hỗ trợ quản lý người dùng, sản phẩm, danh mục, giỏ hàng, đơn hàng, thanh toán đa cổng, đánh giá sản phẩm và dashboard thống kê.
+- Tích hợp các dịch vụ bên thứ ba: **MoMo**, **VNPay**, **PayPal** (thanh toán), **GHN** (vận chuyển), **Cloudinary** (upload ảnh), **Gmail SMTP** (gửi OTP).
+- Dự án được xây dựng nhằm mô phỏng một hệ thống backend thương mại điện tử thực tế, phục vụ mục đích học tập môn **Design Patterns**.
 
 ---
 
-## 📁 Cấu Trúc Thư Mục
+## ✨ Chức năng
+
+### 👤 Người dùng (USER)
+
+- Đăng ký tài khoản (xác thực OTP qua email)
+- Đăng nhập bằng email/mật khẩu hoặc Google OAuth2
+- Xác thực phiên đăng nhập bằng JWT
+- Xem danh sách sản phẩm, xem chi tiết sản phẩm
+- Tìm kiếm và lọc sản phẩm (theo giá, danh mục, thương hiệu, sắp xếp)
+- Thêm sản phẩm vào danh sách yêu thích (Wishlist)
+- Quản lý địa chỉ giao hàng (CRUD)
+- Thêm, cập nhật số lượng, xóa sản phẩm trong giỏ hàng
+- Đặt hàng với tính phí vận chuyển tự động (GHN)
+- Thanh toán qua COD, MoMo, VNPay, PayPal
+- Xem lịch sử đơn hàng, chi tiết đơn hàng, hủy đơn hàng
+- Đánh giá sản phẩm sau khi mua
+- Quản lý thông tin cá nhân, đổi mật khẩu, quên mật khẩu (OTP)
+
+### 🛡️ Quản trị viên (ADMIN)
+
+- Quản lý sản phẩm (CRUD), biến thể sản phẩm, hình ảnh sản phẩm
+- Quản lý danh mục, thương hiệu, loại sản phẩm
+- Quản lý đơn hàng: xem danh sách, tìm kiếm/lọc, cập nhật trạng thái, hủy đơn
+- Quản lý nhân viên: tạo tài khoản Staff, xem danh sách, cập nhật thông tin
+- Quản lý đánh giá: duyệt đánh giá, phản hồi đánh giá
+- Dashboard thống kê: doanh thu, đơn hàng theo trạng thái, biểu đồ doanh thu theo tháng
+
+### 👨‍💼 Nhân viên (STAFF)
+
+- Quản lý đơn hàng: xem, xử lý, cập nhật trạng thái
+- Hỗ trợ quản lý sản phẩm
+- Phản hồi đánh giá khách hàng
+
+> Nhân viên được phân quyền qua `@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")`.
+
+---
+
+## 🛠️ Công nghệ sử dụng
+
+| Nhóm            | Công nghệ                                                 |
+| --------------- | --------------------------------------------------------- |
+| Ngôn ngữ        | Java 21                                                   |
+| Framework       | Spring Boot 3.5.14                                        |
+| API             | Spring Web, RESTful API                                   |
+| Bảo mật         | Spring Security, JWT (Nimbus JOSE), Google OAuth2, BCrypt |
+| Database        | MySQL                                                     |
+| ORM             | Spring Data JPA, Hibernate                                |
+| Cache           | Redis (lưu OTP, cache dữ liệu)                            |
+| Message Queue   | RabbitMQ (xử lý hết hạn đơn hàng)                         |
+| HTTP Client     | Spring Cloud OpenFeign 2025.0.0                           |
+| Mapping         | MapStruct 1.6.3                                           |
+| Build Tool      | Maven                                                     |
+| Thư viện hỗ trợ | Lombok, Bean Validation, Spring Dotenv, Thymeleaf         |
+| Thanh toán      | MoMo, VNPay, PayPal (Sandbox)                             |
+| Vận chuyển      | GHN API                                                   |
+| Upload ảnh      | Cloudinary                                                |
+| Email           | Spring Mail (Gmail SMTP)                                  |
+
+---
+
+## 📁 Cấu trúc thư mục
 
 ```text
 src/main/java/com/vn/keycap_server
-├── client/                         # OpenFeign HTTP Client (MoMo, PayPal, GHN)
-├── configuration/                  # Cấu hình ứng dụng
-│   ├── SecurityConfig.java         #   Spring Security & JWT
-│   ├── CustomJwtDecoder.java       #   JWT decoder tùy chỉnh
-│   ├── ApplicationInitConfig.java  #   Khởi tạo tài khoản admin
-│   ├── cloudinary/                 #   Cấu hình Cloudinary
-│   ├── redis/                      #   Cấu hình Redis
-│   ├── rabbitmq/                   #   Cấu hình RabbitMQ
-│   ├── momo/                       #   Cấu hình MoMo
-│   ├── vnpay/                      #   Cấu hình VNPay
-│   ├── paypal/                     #   Cấu hình PayPal
-│   └── ghn/                        #   Cấu hình GHN Shipping
-├── controller/                     # REST API endpoints
-│   ├── admin/                      #   API quản trị (Admin/Staff)
-│   ├── AuthController.java         #   Đăng nhập, đăng ký, OTP
-│   ├── ProductController.java      #   Sản phẩm
-│   ├── OrderController.java        #   Đơn hàng
-│   ├── CartController.java         #   Giỏ hàng
-│   ├── PaymentController.java      #   Callback thanh toán
-│   ├── ReviewController.java       #   Đánh giá
-│   └── ...                         #   Address, Brand, Category, etc.
-├── dto/                            # Data Transfer Objects
-│   ├── request/                    #   Request DTO
-│   └── response/                   #   Response DTO
-├── exception/                      # Xử lý lỗi tập trung
-├── mapper/                         # MapStruct mappers
-├── modal/                          # JPA Entities (20 entities)
-├── repository/                     # Spring Data JPA repositories
-├── scheduler/                      # Scheduled tasks
-├── service/                        # Business logic
-│   ├── auth/                       #   Xác thực (Factory Method Pattern)
-│   │   └── login/                  #     Login handlers & creators
-│   ├── payment/                    #   Thanh toán (Strategy Pattern)
-│   │   ├── impl/                   #     COD, MoMo, VNPay, PayPal strategies
-│   │   ├── momo/                   #     MoMo service
-│   │   ├── vnpay/                  #     VNPay service
-│   │   └── paypal/                 #     PayPal service
-│   ├── order/                      #   Đơn hàng & message queue
-│   ├── product/                    #   Sản phẩm
-│   ├── cart/                       #   Giỏ hàng
-│   ├── review/                     #   Đánh giá
-│   ├── dashboard/                  #   Thống kê
-│   ├── shipping/                   #   Vận chuyển (GHN)
-│   ├── redis/                      #   Redis service
-│   ├── mail/                       #   Email service
-│   └── ...                         #   Address, Brand, Category, etc.
-├── utils/                          # Enums, Helpers, Encoders
-└── validation/                     # Custom validators
+├── client/
+├── configuration/
+│   ├── cloudinary/
+│   ├── ghn/
+│   ├── momo/
+│   ├── paypal/
+│   ├── rabbitmq/
+│   ├── redis/
+│   └── vnpay/
+├── controller/
+│   └── admin/
+├── dto/
+│   ├── request/
+│   └── response/
+├── exception/
+├── mapper/
+├── modal/
+├── repository/
+├── scheduler/
+├── service/
+│   ├── auth/
+│   │   └── login/
+│   ├── payment/
+│   │   ├── impl/
+│   │   ├── momo/
+│   │   ├── paypal/
+│   │   └── vnpay/
+│   ├── order/
+│   ├── product/
+│   ├── cart/
+│   ├── review/
+│   ├── dashboard/
+│   ├── shipping/
+│   ├── redis/
+│   ├── mail/
+│   └── ...
+├── utils/
+└── validation/
 ```
 
----
-
-## 🚀 Các Chức Năng Chính
-
-### 👤 Chức năng Khách hàng (USER)
-
-| Nhóm           | Chức năng                                                                                                                 |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Xác thực**   | Đăng ký tài khoản (OTP email), Đăng nhập (email/password), Đăng nhập Google OAuth2, Đăng xuất, Quên mật khẩu (OTP)        |
-| **Sản phẩm**   | Xem danh sách sản phẩm, Xem chi tiết, Tìm kiếm & lọc (giá, danh mục, thương hiệu, sắp xếp), Sản phẩm yêu thích (Wishlist) |
-| **Giỏ hàng**   | Thêm sản phẩm, Cập nhật số lượng, Xóa sản phẩm, Xem tổng giỏ hàng                                                         |
-| **Đơn hàng**   | Chuẩn bị checkout (tính phí ship), Đặt hàng, Xem lịch sử, Xem chi tiết, Hủy đơn hàng                                      |
-| **Thanh toán** | COD (thanh toán khi nhận hàng), MoMo, VNPay, PayPal                                                                       |
-| **Đánh giá**   | Đánh giá sản phẩm (sau khi mua), Xem đánh giá                                                                             |
-| **Tài khoản**  | Quản lý thông tin cá nhân, Quản lý địa chỉ giao hàng (CRUD), Đổi mật khẩu                                                 |
-
-### 🛡️ Chức năng Quản trị viên (ADMIN)
-
-| Nhóm                  | Chức năng                                                                                                 |
-| --------------------- | --------------------------------------------------------------------------------------------------------- |
-| **Quản lý sản phẩm**  | CRUD sản phẩm, Quản lý biến thể (variant), Quản lý hình ảnh, Quản lý danh mục, thương hiệu, loại sản phẩm |
-| **Quản lý đơn hàng**  | Xem danh sách đơn hàng, Tìm kiếm/lọc, Cập nhật trạng thái, Hủy đơn hàng                                   |
-| **Quản lý nhân viên** | Tạo tài khoản staff, Xem danh sách, Cập nhật thông tin                                                    |
-| **Quản lý đánh giá**  | Xem/Duyệt đánh giá, Phản hồi đánh giá                                                                     |
-| **Dashboard**         | Thống kê doanh thu, Thống kê đơn hàng theo trạng thái, Biểu đồ doanh thu theo tháng                       |
-
-### 👨‍💼 Chức năng Nhân viên (STAFF)
-
-Nhân viên có quyền tương tự Admin trong việc quản lý đơn hàng, sản phẩm và đánh giá, được phân quyền qua `@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")`.
+| Thư mục         | Vai trò                                                                |
+| --------------- | ---------------------------------------------------------------------- |
+| `client`        | OpenFeign HTTP Client gọi API bên thứ ba (MoMo, PayPal, GHN)           |
+| `configuration` | Cấu hình hệ thống: Security, Redis, RabbitMQ, Payment, Cloudinary, GHN |
+| `controller`    | Tiếp nhận HTTP request từ client và trả response                       |
+| `dto`           | Chứa Request DTO và Response DTO                                       |
+| `exception`     | Xử lý lỗi tập trung (GlobalExceptionHandler)                           |
+| `mapper`        | Chuyển đổi giữa Entity và DTO (MapStruct)                              |
+| `modal`         | Chứa các JPA Entity ánh xạ với bảng database (20 entities)             |
+| `repository`    | Làm việc với database thông qua Spring Data JPA                        |
+| `scheduler`     | Các tác vụ chạy theo lịch (Scheduled tasks)                            |
+| `service`       | Xử lý logic nghiệp vụ chính                                            |
+| `utils`         | Chứa Enum, Helper, Encoder (JWT, VNPay, MoMo)                          |
+| `validation`    | Custom validators cho request                                          |
 
 ---
 
-## 🔐 Phân Quyền Người Dùng
+## ⚙️ Yêu cầu môi trường
 
-| Vai trò | Mô tả         | Chức năng chính                                |
-| ------- | ------------- | ---------------------------------------------- |
-| `USER`  | Khách hàng    | Mua hàng, quản lý giỏ hàng, đặt hàng, đánh giá |
-| `STAFF` | Nhân viên     | Quản lý đơn hàng, sản phẩm, phản hồi đánh giá  |
-| `ADMIN` | Quản trị viên | Toàn quyền: quản lý staff, dashboard thống kê  |
-
----
-
-## 📡 API Chính
-
-| Nhóm API              | Base Path                                                            | Mô tả                                     |
-| --------------------- | -------------------------------------------------------------------- | ----------------------------------------- |
-| Auth API              | `/login`, `/register`, `/logout`, `/otps/request`, `/reset-password` | Xác thực & đăng ký                        |
-| User API              | `/users`                                                             | Quản lý thông tin cá nhân                 |
-| Product API           | `/products`                                                          | Duyệt, tìm kiếm, lọc sản phẩm             |
-| Category API          | `/categories`                                                        | Danh sách danh mục                        |
-| Brand API             | `/brands`                                                            | Danh sách thương hiệu                     |
-| Type API              | `/types`                                                             | Danh sách loại sản phẩm                   |
-| Cart API              | `/carts`                                                             | Quản lý giỏ hàng                          |
-| Order API             | `/orders`                                                            | Đặt hàng, xem lịch sử, hủy đơn            |
-| Address API           | `/addresses`                                                         | CRUD địa chỉ giao hàng                    |
-| Payment API           | `/payment`                                                           | Callback thanh toán (MoMo, VNPay, PayPal) |
-| Review API            | `/reviews`                                                           | Đánh giá sản phẩm                         |
-| Favorite API          | `/favorites`                                                         | Sản phẩm yêu thích                        |
-| Media API             | `/medias`                                                            | Upload ảnh (Cloudinary)                   |
-| **Admin** Product API | `/admin/products`                                                    | CRUD sản phẩm (Admin/Staff)               |
-| **Admin** Order API   | `/admin/orders`                                                      | Quản lý đơn hàng (Admin/Staff)            |
-| **Admin** Staff API   | `/admin/staff`                                                       | Quản lý nhân viên (Admin only)            |
-| **Admin** Review API  | `/admin/reviews`                                                     | Duyệt & phản hồi đánh giá                 |
-| Dashboard API         | `/admin/dashboard`                                                   | Thống kê doanh thu, đơn hàng              |
-
----
-
-## ⚙️ Hướng Dẫn Cài Đặt
-
-### Yêu cầu môi trường
+Trước khi chạy dự án, cần cài đặt:
 
 - **JDK 21** trở lên
 - **Maven 3.8+**
 - **MySQL 8.0+**
-- **Redis 7.0+**
-- **RabbitMQ 3.12+**
-- IDE: IntelliJ IDEA hoặc VS Code
-- Postman (để test API)
+- **Redis**
+- **RabbitMQ**
+- IntelliJ IDEA hoặc VS Code
+- Postman để kiểm thử API
+
+---
+
+## 📦 Cài đặt
 
 ### 1. Clone project
 
@@ -259,17 +188,45 @@ git clone <repository-url>
 cd keycap_server
 ```
 
-### 2. Cấu hình Database
+### 2. Build project
+
+```bash
+mvn clean install -DskipTests
+```
+
+### 3. Tạo database
 
 ```sql
 CREATE DATABASE keycap_server;
 ```
 
-> Ứng dụng tự tạo database nếu chưa tồn tại nhờ `createDatabaseIfNotExist=true`.
+> Ứng dụng tự tạo database nếu chưa tồn tại nhờ cấu hình `createDatabaseIfNotExist=true`.
 
-### 3. Cấu hình biến môi trường
+### 4. Import dữ liệu mẫu (tùy chọn)
 
-Tạo file `.env` tại thư mục gốc dự án:
+```bash
+mysql -u root -p keycap_server < src/main/resources/seed-data.sql
+```
+
+File `seed-data.sql` chứa dữ liệu mẫu bao gồm: danh mục, thương hiệu, sản phẩm, biến thể và hình ảnh.
+
+### 5. Tài khoản mặc định
+
+Khi khởi động lần đầu, hệ thống tự động tạo tài khoản Admin:
+
+| Role  | Email           | Password |
+| ----- | --------------- | -------- |
+| ADMIN | admin@gmail.com | admin    |
+
+---
+
+## 🔧 Cấu hình môi trường
+
+Dự án sử dụng file `.env` tại thư mục gốc để quản lý biến môi trường (thông qua thư viện `spring-dotenv`).
+
+File cấu hình chính: `src/main/resources/application.yaml`
+
+Tạo file `.env` với nội dung sau:
 
 ```properties
 # Database
@@ -325,98 +282,64 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-### 4. Cài đặt Redis & RabbitMQ
+Redis và RabbitMQ mặc định chạy trên localhost:
 
-```bash
-# Redis (Docker)
-docker run -d --name redis -p 6379:6379 redis
+```yaml
+# Redis (application.yaml)
+spring.data.redis.host: localhost
+spring.data.redis.port: 6379
 
-# RabbitMQ (Docker)
-docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:management
+# RabbitMQ (application.yaml)
+spring.rabbitmq.host: localhost
+spring.rabbitmq.port: 5672
 ```
 
-### 5. Chạy project
+> ⚠️ **Không commit mật khẩu database, JWT secret hoặc API key thật lên GitHub.** Thêm `.env` vào `.gitignore`.
+
+---
+
+## ▶️ Chạy dự án
+
+### Chạy bằng Maven
 
 ```bash
-# Build project
-mvn clean install -DskipTests
-
-# Chạy ứng dụng
 mvn spring-boot:run
 ```
 
-Hoặc:
+### Hoặc chạy file JAR
 
 ```bash
 java -jar target/keycap_server-0.0.1-SNAPSHOT.jar
 ```
 
-Server khởi chạy tại: `http://localhost:3000`
+Sau khi chạy thành công, backend khởi chạy tại:
 
-### 6. Import dữ liệu mẫu (tùy chọn)
-
-```bash
-mysql -u root -p keycap_server < src/main/resources/seed-data.sql
+```
+http://localhost:3000
 ```
 
 ---
 
-## 🗄️ Dữ Liệu Mẫu & Tài Khoản Test
+## 🔗 Liên kết với Frontend
 
-Khi khởi động lần đầu, hệ thống tự động tạo tài khoản Admin thông qua `ApplicationInitConfig`:
+Backend cung cấp REST API cho frontend Client và Admin. Frontend cần cấu hình base URL trỏ về backend:
 
-| Role  | Email           | Password |
-| ----- | --------------- | -------- |
-| ADMIN | admin@gmail.com | admin    |
+```env
+VITE_API_BASE_URL=http://localhost:3000
+```
 
-> ⚠️ Vui lòng đổi mật khẩu admin sau khi đăng nhập lần đầu.
-
-File `seed-data.sql` chứa dữ liệu mẫu bao gồm: danh mục, thương hiệu, sản phẩm, biến thể, hình ảnh và tài khoản test.
+Repository Frontend: [Web_ShopKeyCap](https://github.com/chuonghoai/Web_ShopKeyCap)
 
 ---
 
-## 🔒 Lưu Ý Bảo Mật
+## 👥 Thành viên
 
-> [!CAUTION]
-> **Không push thông tin nhạy cảm lên GitHub:**
->
-> - ❌ Mật khẩu database
-> - ❌ JWT Secret Key
-> - ❌ API Key thanh toán (MoMo, VNPay, PayPal)
-> - ❌ Google Client Secret
-> - ❌ Mail App Password
-> - ❌ Cloudinary API Secret
-
-Sử dụng file `.env` và thêm vào `.gitignore`:
-
-```gitignore
-.env
-```
-
----
-
-## 📝 Ghi Chú Phát Triển
-
-- Đây là dự án học tập và thực hành xây dựng hệ thống backend thương mại điện tử.
-- Các cổng thanh toán (MoMo, VNPay, PayPal) đang sử dụng **môi trường Sandbox/Test**, không phải production.
-- Hệ thống sử dụng `ddl-auto: update` — Hibernate tự tạo/cập nhật bảng, phù hợp cho môi trường development.
-- Đơn hàng thanh toán online có cơ chế **tự động hết hạn sau 15 phút** nếu chưa thanh toán (qua RabbitMQ delayed message).
-- Một số chức năng có thể tiếp tục mở rộng: voucher/mã giảm giá, chat hỗ trợ, thông báo realtime.
-
----
-
-## 📊 Sơ Đồ Database (Entities)
-
-Hệ thống gồm **20 entities** chính:
-
-```
-User ─── UserToken, Address, CartItem, Order, Review, Wishlist
-Product ─── ProductVariant, ProductImage, ProductSpecification
-ProductVariant ─── ProductVariantAttribute, OrderItem
-Order ─── OrderItem, OrderStatusHistory
-Category, Brand, ProductType
-Media, ReviewReply
-```
+| STT | Họ tên             | Vai trò            |
+| --- | ------------------ | ------------------ |
+| 1   | Phan Phúc Hậu      | Backend Developer  |
+| 2   | Trương Hoài Chương | Frontend Developer |
+| 3   | Lê Hữu Văn         | Backend Developer  |
+| 4   | Phạm Thị Kim Ngân  | Tester / Document  |
 
 ---
 
