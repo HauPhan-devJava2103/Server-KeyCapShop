@@ -31,55 +31,55 @@
 
 ### Backend Framework
 
-| Công nghệ | Phiên bản | Mô tả |
-|-----------|----------|-------|
-| Java | 21 | Ngôn ngữ lập trình chính |
-| Spring Boot | 3.5.14 | Framework backend |
-| Spring Web | - | Xây dựng REST API |
-| Spring Security | - | Xác thực & phân quyền |
-| Spring Data JPA | - | Tầng truy cập dữ liệu |
-| Spring Data Redis | - | Cache & OTP storage |
-| Spring AMQP | - | Message queue (RabbitMQ) |
-| Spring Cloud OpenFeign | 2025.0.0 | HTTP Client cho MoMo/PayPal API |
-| Spring Mail + Thymeleaf | - | Gửi email OTP |
-| Hibernate | - | ORM mapping |
+| Công nghệ               | Phiên bản | Mô tả                           |
+| ----------------------- | --------- | ------------------------------- |
+| Java                    | 21        | Ngôn ngữ lập trình chính        |
+| Spring Boot             | 3.5.14    | Framework backend               |
+| Spring Web              | -         | Xây dựng REST API               |
+| Spring Security         | -         | Xác thực & phân quyền           |
+| Spring Data JPA         | -         | Tầng truy cập dữ liệu           |
+| Spring Data Redis       | -         | Cache & OTP storage             |
+| Spring AMQP             | -         | Message queue (RabbitMQ)        |
+| Spring Cloud OpenFeign  | 2025.0.0  | HTTP Client cho MoMo/PayPal API |
+| Spring Mail + Thymeleaf | -         | Gửi email OTP                   |
+| Hibernate               | -         | ORM mapping                     |
 
 ### Database & Cache
 
-| Công nghệ | Mô tả |
-|-----------|-------|
-| MySQL | Cơ sở dữ liệu chính |
-| Redis | Cache dữ liệu, lưu OTP, rate limiting |
-| RabbitMQ | Message queue xử lý hết hạn đơn hàng |
+| Công nghệ | Mô tả                                 |
+| --------- | ------------------------------------- |
+| MySQL     | Cơ sở dữ liệu chính                   |
+| Redis     | Cache dữ liệu, lưu OTP, rate limiting |
+| RabbitMQ  | Message queue xử lý hết hạn đơn hàng  |
 
 ### Authentication & Security
 
-| Công nghệ | Mô tả |
-|-----------|-------|
-| JWT (Nimbus JOSE) | Token-based authentication (HMAC-SHA512) |
-| OAuth2 Resource Server | Decode & validate JWT |
-| Google API Client | Đăng nhập qua Google OAuth2 |
-| BCrypt | Mã hóa mật khẩu |
+| Công nghệ              | Mô tả                                    |
+| ---------------------- | ---------------------------------------- |
+| JWT (Nimbus JOSE)      | Token-based authentication (HMAC-SHA512) |
+| OAuth2 Resource Server | Decode & validate JWT                    |
+| Google API Client      | Đăng nhập qua Google OAuth2              |
+| BCrypt                 | Mã hóa mật khẩu                          |
 
 ### Thanh Toán & Vận Chuyển
 
-| Công nghệ | Mô tả |
-|-----------|-------|
-| MoMo Gateway | Thanh toán qua ví MoMo |
-| VNPay Sandbox | Thanh toán qua VNPay |
-| PayPal Sandbox | Thanh toán qua PayPal |
-| GHN API | Tính phí vận chuyển |
+| Công nghệ      | Mô tả                  |
+| -------------- | ---------------------- |
+| MoMo Gateway   | Thanh toán qua ví MoMo |
+| VNPay Sandbox  | Thanh toán qua VNPay   |
+| PayPal Sandbox | Thanh toán qua PayPal  |
+| GHN API        | Tính phí vận chuyển    |
 
 ### Tools & Libraries
 
-| Công nghệ | Mô tả |
-|-----------|-------|
-| Lombok | Giảm boilerplate code |
-| MapStruct 1.6.3 | Object mapping (Entity ↔ DTO) |
-| Cloudinary | Upload & quản lý hình ảnh |
-| Bean Validation | Validate request DTO |
-| Spring Dotenv | Quản lý biến môi trường (.env) |
-| Maven | Build & dependency management |
+| Công nghệ       | Mô tả                          |
+| --------------- | ------------------------------ |
+| Lombok          | Giảm boilerplate code          |
+| MapStruct 1.6.3 | Object mapping (Entity ↔ DTO)  |
+| Cloudinary      | Upload & quản lý hình ảnh      |
+| Bean Validation | Validate request DTO           |
+| Spring Dotenv   | Quản lý biến môi trường (.env) |
+| Maven           | Build & dependency management  |
 
 ---
 
@@ -95,29 +95,27 @@ Client Request → Controller → Service → Repository → Database
 
 ### Các tầng chính
 
-| Tầng | Vai trò |
-|------|---------|
-| **Controller** | Nhận request HTTP, validate input, trả response |
-| **Service** | Xử lý business logic |
-| **Repository** | Truy vấn database qua Spring Data JPA |
-| **Entity/Modal** | Ánh xạ bảng database (JPA Entity) |
-| **DTO** | Data Transfer Object — request/response riêng biệt |
-| **Mapper** | Chuyển đổi Entity ↔ DTO (MapStruct) |
+| Tầng              | Vai trò                                                 |
+| ----------------- | ------------------------------------------------------- |
+| **Controller**    | Nhận request HTTP, validate input, trả response         |
+| **Service**       | Xử lý business logic                                    |
+| **Repository**    | Truy vấn database qua Spring Data JPA                   |
+| **Entity/Modal**  | Ánh xạ bảng database (JPA Entity)                       |
+| **DTO**           | Data Transfer Object — request/response riêng biệt      |
+| **Mapper**        | Chuyển đổi Entity ↔ DTO (MapStruct)                     |
 | **Configuration** | Cấu hình Security, Redis, RabbitMQ, Payment, Cloudinary |
-| **Exception** | Xử lý lỗi tập trung (GlobalExceptionHandler) |
+| **Exception**     | Xử lý lỗi tập trung (GlobalExceptionHandler)            |
 
 ### Design Patterns áp dụng
 
-| Pattern | Áp dụng tại | Mô tả |
-|---------|------------|-------|
-| **Factory Method** | Login (`AbstractLoginCreator`) | Khởi tạo handler đăng nhập (Basic/Google) qua abstract creator |
-| **Strategy** | Payment (`IPaymentStrategy`) | Chọn chiến lược thanh toán runtime (COD/MoMo/VNPay/PayPal) |
-| **Builder** | Entity & DTO (`@Builder` Lombok) | Khởi tạo object phức tạp (Order, LoginResponse...) |
-| **Repository** | Spring Data JPA | Truy cập dữ liệu qua interface |
-| **DTO** | Request/Response DTO | Tách biệt dữ liệu giữa client và domain |
-| **Observer** | Spring Event (`OrderCompletedEvent`) | Xử lý sự kiện hoàn thành đơn hàng |
-| **Singleton** | Spring Bean (`@Service`, `@Component`) | Quản lý vòng đời object |
-| **Template Method** | `AbstractLoginCreator.executeLogin()` | Chuẩn hóa luồng gọi handler |
+| Pattern            | Áp dụng tại                          | Mô tả                                                          |
+| ------------------ | ------------------------------------ | -------------------------------------------------------------- |
+| **Factory Method** | Login (`AbstractLoginCreator`)       | Khởi tạo handler đăng nhập (Basic/Google) qua abstract creator |
+| **Strategy**       | Payment (`IPaymentStrategy`)         | Chọn chiến lược thanh toán runtime (COD/MoMo/VNPay/PayPal)     |
+| **Builder**        | Entity & DTO (`@Builder` Lombok)     | Khởi tạo object phức tạp (Order, LoginResponse...)             |
+| **Repository**     | Spring Data JPA                      | Truy cập dữ liệu qua interface                                 |
+| **DTO**            | Request/Response DTO                 | Tách biệt dữ liệu giữa client và domain                        |
+| **Observer**       | Spring Event (`OrderCompletedEvent`) | Xử lý sự kiện hoàn thành đơn hàng                              |
 
 ---
 
@@ -181,25 +179,25 @@ src/main/java/com/vn/keycap_server
 
 ### 👤 Chức năng Khách hàng (USER)
 
-| Nhóm | Chức năng |
-|------|----------|
-| **Xác thực** | Đăng ký tài khoản (OTP email), Đăng nhập (email/password), Đăng nhập Google OAuth2, Đăng xuất, Quên mật khẩu (OTP) |
-| **Sản phẩm** | Xem danh sách sản phẩm, Xem chi tiết, Tìm kiếm & lọc (giá, danh mục, thương hiệu, sắp xếp), Sản phẩm yêu thích (Wishlist) |
-| **Giỏ hàng** | Thêm sản phẩm, Cập nhật số lượng, Xóa sản phẩm, Xem tổng giỏ hàng |
-| **Đơn hàng** | Chuẩn bị checkout (tính phí ship), Đặt hàng, Xem lịch sử, Xem chi tiết, Hủy đơn hàng |
-| **Thanh toán** | COD (thanh toán khi nhận hàng), MoMo, VNPay, PayPal |
-| **Đánh giá** | Đánh giá sản phẩm (sau khi mua), Xem đánh giá |
-| **Tài khoản** | Quản lý thông tin cá nhân, Quản lý địa chỉ giao hàng (CRUD), Đổi mật khẩu |
+| Nhóm           | Chức năng                                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Xác thực**   | Đăng ký tài khoản (OTP email), Đăng nhập (email/password), Đăng nhập Google OAuth2, Đăng xuất, Quên mật khẩu (OTP)        |
+| **Sản phẩm**   | Xem danh sách sản phẩm, Xem chi tiết, Tìm kiếm & lọc (giá, danh mục, thương hiệu, sắp xếp), Sản phẩm yêu thích (Wishlist) |
+| **Giỏ hàng**   | Thêm sản phẩm, Cập nhật số lượng, Xóa sản phẩm, Xem tổng giỏ hàng                                                         |
+| **Đơn hàng**   | Chuẩn bị checkout (tính phí ship), Đặt hàng, Xem lịch sử, Xem chi tiết, Hủy đơn hàng                                      |
+| **Thanh toán** | COD (thanh toán khi nhận hàng), MoMo, VNPay, PayPal                                                                       |
+| **Đánh giá**   | Đánh giá sản phẩm (sau khi mua), Xem đánh giá                                                                             |
+| **Tài khoản**  | Quản lý thông tin cá nhân, Quản lý địa chỉ giao hàng (CRUD), Đổi mật khẩu                                                 |
 
 ### 🛡️ Chức năng Quản trị viên (ADMIN)
 
-| Nhóm | Chức năng |
-|------|----------|
-| **Quản lý sản phẩm** | CRUD sản phẩm, Quản lý biến thể (variant), Quản lý hình ảnh, Quản lý danh mục, thương hiệu, loại sản phẩm |
-| **Quản lý đơn hàng** | Xem danh sách đơn hàng, Tìm kiếm/lọc, Cập nhật trạng thái, Hủy đơn hàng |
-| **Quản lý nhân viên** | Tạo tài khoản staff, Xem danh sách, Cập nhật thông tin |
-| **Quản lý đánh giá** | Xem/Duyệt đánh giá, Phản hồi đánh giá |
-| **Dashboard** | Thống kê doanh thu, Thống kê đơn hàng theo trạng thái, Biểu đồ doanh thu theo tháng |
+| Nhóm                  | Chức năng                                                                                                 |
+| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Quản lý sản phẩm**  | CRUD sản phẩm, Quản lý biến thể (variant), Quản lý hình ảnh, Quản lý danh mục, thương hiệu, loại sản phẩm |
+| **Quản lý đơn hàng**  | Xem danh sách đơn hàng, Tìm kiếm/lọc, Cập nhật trạng thái, Hủy đơn hàng                                   |
+| **Quản lý nhân viên** | Tạo tài khoản staff, Xem danh sách, Cập nhật thông tin                                                    |
+| **Quản lý đánh giá**  | Xem/Duyệt đánh giá, Phản hồi đánh giá                                                                     |
+| **Dashboard**         | Thống kê doanh thu, Thống kê đơn hàng theo trạng thái, Biểu đồ doanh thu theo tháng                       |
 
 ### 👨‍💼 Chức năng Nhân viên (STAFF)
 
@@ -209,36 +207,36 @@ Nhân viên có quyền tương tự Admin trong việc quản lý đơn hàng, 
 
 ## 🔐 Phân Quyền Người Dùng
 
-| Vai trò | Mô tả | Chức năng chính |
-|---------|-------|----------------|
-| `USER` | Khách hàng | Mua hàng, quản lý giỏ hàng, đặt hàng, đánh giá |
-| `STAFF` | Nhân viên | Quản lý đơn hàng, sản phẩm, phản hồi đánh giá |
-| `ADMIN` | Quản trị viên | Toàn quyền: quản lý staff, dashboard thống kê |
+| Vai trò | Mô tả         | Chức năng chính                                |
+| ------- | ------------- | ---------------------------------------------- |
+| `USER`  | Khách hàng    | Mua hàng, quản lý giỏ hàng, đặt hàng, đánh giá |
+| `STAFF` | Nhân viên     | Quản lý đơn hàng, sản phẩm, phản hồi đánh giá  |
+| `ADMIN` | Quản trị viên | Toàn quyền: quản lý staff, dashboard thống kê  |
 
 ---
 
 ## 📡 API Chính
 
-| Nhóm API | Base Path | Mô tả |
-|----------|-----------|-------|
-| Auth API | `/login`, `/register`, `/logout`, `/otps/request`, `/reset-password` | Xác thực & đăng ký |
-| User API | `/users` | Quản lý thông tin cá nhân |
-| Product API | `/products` | Duyệt, tìm kiếm, lọc sản phẩm |
-| Category API | `/categories` | Danh sách danh mục |
-| Brand API | `/brands` | Danh sách thương hiệu |
-| Type API | `/types` | Danh sách loại sản phẩm |
-| Cart API | `/carts` | Quản lý giỏ hàng |
-| Order API | `/orders` | Đặt hàng, xem lịch sử, hủy đơn |
-| Address API | `/addresses` | CRUD địa chỉ giao hàng |
-| Payment API | `/payment` | Callback thanh toán (MoMo, VNPay, PayPal) |
-| Review API | `/reviews` | Đánh giá sản phẩm |
-| Favorite API | `/favorites` | Sản phẩm yêu thích |
-| Media API | `/medias` | Upload ảnh (Cloudinary) |
-| **Admin** Product API | `/admin/products` | CRUD sản phẩm (Admin/Staff) |
-| **Admin** Order API | `/admin/orders` | Quản lý đơn hàng (Admin/Staff) |
-| **Admin** Staff API | `/admin/staff` | Quản lý nhân viên (Admin only) |
-| **Admin** Review API | `/admin/reviews` | Duyệt & phản hồi đánh giá |
-| Dashboard API | `/admin/dashboard` | Thống kê doanh thu, đơn hàng |
+| Nhóm API              | Base Path                                                            | Mô tả                                     |
+| --------------------- | -------------------------------------------------------------------- | ----------------------------------------- |
+| Auth API              | `/login`, `/register`, `/logout`, `/otps/request`, `/reset-password` | Xác thực & đăng ký                        |
+| User API              | `/users`                                                             | Quản lý thông tin cá nhân                 |
+| Product API           | `/products`                                                          | Duyệt, tìm kiếm, lọc sản phẩm             |
+| Category API          | `/categories`                                                        | Danh sách danh mục                        |
+| Brand API             | `/brands`                                                            | Danh sách thương hiệu                     |
+| Type API              | `/types`                                                             | Danh sách loại sản phẩm                   |
+| Cart API              | `/carts`                                                             | Quản lý giỏ hàng                          |
+| Order API             | `/orders`                                                            | Đặt hàng, xem lịch sử, hủy đơn            |
+| Address API           | `/addresses`                                                         | CRUD địa chỉ giao hàng                    |
+| Payment API           | `/payment`                                                           | Callback thanh toán (MoMo, VNPay, PayPal) |
+| Review API            | `/reviews`                                                           | Đánh giá sản phẩm                         |
+| Favorite API          | `/favorites`                                                         | Sản phẩm yêu thích                        |
+| Media API             | `/medias`                                                            | Upload ảnh (Cloudinary)                   |
+| **Admin** Product API | `/admin/products`                                                    | CRUD sản phẩm (Admin/Staff)               |
+| **Admin** Order API   | `/admin/orders`                                                      | Quản lý đơn hàng (Admin/Staff)            |
+| **Admin** Staff API   | `/admin/staff`                                                       | Quản lý nhân viên (Admin only)            |
+| **Admin** Review API  | `/admin/reviews`                                                     | Duyệt & phản hồi đánh giá                 |
+| Dashboard API         | `/admin/dashboard`                                                   | Thống kê doanh thu, đơn hàng              |
 
 ---
 
@@ -367,9 +365,9 @@ mysql -u root -p keycap_server < src/main/resources/seed-data.sql
 
 Khi khởi động lần đầu, hệ thống tự động tạo tài khoản Admin thông qua `ApplicationInitConfig`:
 
-| Role | Email | Password |
-|------|-------|----------|
-| ADMIN | admin@gmail.com | admin |
+| Role  | Email           | Password |
+| ----- | --------------- | -------- |
+| ADMIN | admin@gmail.com | admin    |
 
 > ⚠️ Vui lòng đổi mật khẩu admin sau khi đăng nhập lần đầu.
 
@@ -381,6 +379,7 @@ File `seed-data.sql` chứa dữ liệu mẫu bao gồm: danh mục, thương hi
 
 > [!CAUTION]
 > **Không push thông tin nhạy cảm lên GitHub:**
+>
 > - ❌ Mật khẩu database
 > - ❌ JWT Secret Key
 > - ❌ API Key thanh toán (MoMo, VNPay, PayPal)
