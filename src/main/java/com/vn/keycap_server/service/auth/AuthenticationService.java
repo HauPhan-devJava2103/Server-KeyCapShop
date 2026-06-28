@@ -27,8 +27,9 @@ import com.vn.keycap_server.modal.User;
 import com.vn.keycap_server.modal.UserToken;
 import com.vn.keycap_server.repository.UserRepository;
 import com.vn.keycap_server.repository.UserTokenRepository;
-import com.vn.keycap_server.service.auth.login.LoginHandlerFactory;
+import com.vn.keycap_server.service.auth.login.LoginFactoryRegistry;
 import com.vn.keycap_server.service.mail.IMailService;
+import com.vn.keycap_server.utils.ELoginType;
 import com.vn.keycap_server.utils.EOtpPurpose;
 import com.vn.keycap_server.utils.ERole;
 
@@ -38,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthenticationService implements IAuthenticationService {
 
-    private final LoginHandlerFactory loginHandlerFactory;
+    private final LoginFactoryRegistry loginHandlerRegistry;
 
     private final TokenService tokenService;
 
@@ -54,12 +55,12 @@ public class AuthenticationService implements IAuthenticationService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        return loginHandlerFactory.<LoginRequest>getHandler("basic").login(request);
+        return loginHandlerRegistry.getCreator(ELoginType.BASIC).executeLogin(request);
     }
 
     @Override
     public LoginResponse loginGoogle(LoginGoogleRequest request) {
-        return loginHandlerFactory.<LoginGoogleRequest>getHandler("google").login(request);
+        return loginHandlerRegistry.getCreator(ELoginType.GOOGLE).executeLogin(request);
     }
 
     @Override

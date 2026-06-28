@@ -1,4 +1,4 @@
-package com.vn.keycap_server.service.auth.login;
+package com.vn.keycap_server.service.auth.login.product;
 
 import java.util.Collections;
 
@@ -30,10 +30,6 @@ public class GoogleLoginHandler implements ILoginHandler<LoginGoogleRequest> {
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
 
-    @Override
-    public String getLoginType() {
-        return "google";
-    }
 
     @Override
     public LoginResponse login(LoginGoogleRequest request) {

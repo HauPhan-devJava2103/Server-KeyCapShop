@@ -1,4 +1,4 @@
-package com.vn.keycap_server.service.auth.login;
+package com.vn.keycap_server.service.auth.login.product;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -22,11 +22,6 @@ public class BasicLoginHandler implements ILoginHandler<LoginRequest> {
     private final UserMapper userMapper;
 
     private final PasswordEncoder passwordEncoder;
-
-    @Override
-    public String getLoginType() {
-        return "basic";
-    }
 
     @Override
     public LoginResponse login(LoginRequest request) {
