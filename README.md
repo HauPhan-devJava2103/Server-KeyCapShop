@@ -343,4 +343,4 @@ Repository Frontend: [Web_ShopKeyCap](https://github.com/chuonghoai/Web_ShopKeyC
 
 ---
 
-> 🎓 **Dự án được phát triển phục vụ mục đích học tập môn.**
+> 🎓 **Dự án được phát triển phục vụ mục đích học tập.**
