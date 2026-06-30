@@ -1,5 +1,7 @@
 package com.vn.keycap_server.service.auth.login;
 
+import java.util.Map;
+
 import org.springframework.stereotype.Component;
 
 import com.vn.keycap_server.service.auth.login.creator.AbstractLoginCreator;
@@ -11,12 +13,14 @@ import com.vn.keycap_server.utils.ELoginType;
 
 @Component
 public class LoginFactoryRegistry {
+    private final Map<ELoginType, AbstractLoginCreator> creatorMap = Map.of();
     private final BasicLoginHandler basicLoginHandler;
     private final GoogleLoginHandler googleLoginHandler;
 
     public LoginFactoryRegistry(BasicLoginHandler basicLoginHandler, GoogleLoginHandler googleLoginHandler) {
         this.basicLoginHandler = basicLoginHandler;
         this.googleLoginHandler = googleLoginHandler;
+
     }
 
     public AbstractLoginCreator getCreator(ELoginType loginType) {
